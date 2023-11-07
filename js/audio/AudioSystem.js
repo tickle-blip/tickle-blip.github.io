@@ -88,8 +88,9 @@ let addModifyEvent = function(arr) {
     }
 };
 
-const lp_filter = new Tone.Filter(10000, "lowpass").toDestination();
-const hp_filter = new Tone.Filter(3000, "highpass").connect(lp_filter);
+//const lp_filter = new Tone.Filter(18000, "lowpass").toDestination();
+//const hp_filter = new Tone.Filter(3000, "highpass").connect(lp_filter);
+const hp_filter = new Tone.Limiter(-5).toDestination();
 const Synth1 = function(){
     
     const reverb = new Tone.JCReverb().connect(hp_filter);
