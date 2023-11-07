@@ -5,7 +5,7 @@ import {addComponent, addEntity, pipe} from 'bitecs'
 import { createWorld } from './factory/createWorld.js'
 import {bindObject3DToEntity} from "./factory/bindObject3DEntity.js";
 import {InputSystem} from "../Input/InputSystem.js";
-import {AudioSystem} from "./../audio/AudioSystem.js";
+import {AudioSystem} from "/js/audio/AudioSystem.js";
 import {timeSystem} from "./system/time.js";
 import {renderSystem} from "./system/render.js";
 import {cameraMovementSystem} from "./system/cameraMovement.js";

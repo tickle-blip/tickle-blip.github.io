@@ -1,7 +1,7 @@
 ﻿//import drums from './tidal.js';
 import {MathUtils} from "three";
-//import * as Tone from 'tone';
-const Tone = {};
+import * as Tone from 'tone';
+
 let tone_loaded = false;
 window.addEventListener('pointerup', async () => {
     if (tone_loaded)
