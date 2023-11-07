@@ -34,7 +34,7 @@ const sheet_tooltips = document.getElementById("sheet_tooltips");
 const scale_div = document.getElementById("scale-div");
 const synth_info = document.getElementById("synth-name");
 const params_list = document.getElementById("e-list");
-
+const sheet_song_list = document.getElementById("sheet_songList");
 
 const first_row = [28,38,29,39,20,30,21,31,22,32,23,33,24,34,25,35,26,36,27,37];
 const second_row = [18,17,16,13,12,11,10,8,7,6,5,3,4,2,9,14,15,1,0,19];
@@ -775,7 +775,8 @@ export function initUI(ui_pre_scene,ecs_world) {
     renderer.render(scene,camera);
 }
 export function renderUI(){
-    if (!ui_visible) return;
+    if (!ui_visible || sheet_song_list.style.display!== "none") return;
+    
     uiInputSystem.update();
     //scene.getObjectByName("DIRLIGHT").rotation.set(,0,0);
     if (pointer.x !== -2) {

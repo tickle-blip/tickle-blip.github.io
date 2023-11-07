@@ -115,12 +115,37 @@ const Synth1 = function(){
         reverb: {value:0.0,min:0,max:1.}
         };
     this.parameterNames=["volume","attack","release","harmonicity","waveform","distortion","reverb"    ];
+
+    this.updateAllParameters = function(){
+
+        synth.volume.value = this.parameters.volume.value;
+        distortion.order = Math.floor(this.parameters.distortion.value);
+        reverb.roomSize.value = 0.5;
+        reverb.wet.value = this.parameters.reverb.value;
+        synth.set(
+            {
+                oscillator: {
+                    harmonicity: Math.floor(this.parameters.harmonicity.value*10)/10,
+                    type: modulationTypes[Math.floor(this.parameters.waveform.value)],
+                },
+                envelope:{
+                    attack:this.parameters.attack.value,
+                    decay: 0,
+                    sustain:1.0,
+                    release:this.parameters.release.value
+                }
+                //
+            });
+    }
+    this.updateAllParameters();
+    
     this.modifyParameter01 = function(index, value){
 
         if (this.parameters[index].default === undefined){
             this.parameters[index].default = this.parameters[index].value;
         }
         this.parameters[index].value = MathUtils.lerp(this.parameters[index].min,this.parameters[index].max,value);
+        this.updateAllParameters();
     }        
     this.modifyParameter = function(index, value){
 
@@ -128,6 +153,7 @@ const Synth1 = function(){
             this.parameters[index].default = this.parameters[index].value;
         }
         this.parameters[index].value = value;
+        this.updateAllParameters();
     }    
     this.getDefault01 = function(index){
         return (this.parameters[index].value-this.parameters[index].min)/(this.parameters[index].max-this.parameters[index].min);
@@ -147,24 +173,6 @@ const Synth1 = function(){
   //          console.log(synth._voices[0].oscillator.modulationType);
     //        console.log(synth._voices[0].oscillator.harmonicity);
         }
-        synth.volume.value = this.parameters.volume.value;
-        distortion.order = Math.floor(this.parameters.distortion.value);
-        reverb.roomSize.value = 0.5;
-        reverb.wet.value = this.parameters.reverb.value;
-        synth.set(
-        {
-            oscillator: {
-                harmonicity: Math.floor(this.parameters.harmonicity.value*10)/10,
-                type: modulationTypes[Math.floor(this.parameters.waveform.value)],
-            },
-            envelope:{
-                attack:this.parameters.attack.value,
-                decay: 0,
-                sustain:1.0,
-                release:this.parameters.release.value
-                }
-            //
-        });
         synth.triggerAttackRelease(pitch,this.parameters.attack.value);
         }
     this.releaseAll= function(){
@@ -193,36 +201,9 @@ const Synth2 = function(){
         distortion: {value:1,min:1,max:100.},
         reverb: {value:0.0,min:0,max:1.}
     };
-    this.parameterNames=["volume","attack","sustainTime","harmonicity","waveform","distortion","reverb"    ];
-    this.modifyParameter01 = function(index, value){
+    this.parameterNames=["volume","attack","sustainTime","harmonicity","waveform","distortion","reverb"    ]
+    this.updateAllParameters = function(){
 
-        if (this.parameters[index].default === undefined){
-            this.parameters[index].default = this.parameters[index].value;
-        }
-        this.parameters[index].value = MathUtils.lerp(this.parameters[index].min,this.parameters[index].max,value);
-    }
-    this.modifyParameter = function(index, value){
-
-        if (this.parameters[index].default === undefined){
-            this.parameters[index].default = this.parameters[index].value;
-        }
-        this.parameters[index].value = value;
-    }
-    this.getDefault01 = function(index){
-        return (this.parameters[index].value-this.parameters[index].min)/(this.parameters[index].max-this.parameters[index].min);
-    }
-    this.play = function(pitch_index,effect){
-
-        const pitch = currentScaleFr * Math.pow(2, Math.floor(pitch_index/activeScale.length)+ activeScale[mod(pitch_index,activeScale.length)]/12);
-        /*  if (effect[0]>0)
-              delay.wet.value = effect[0];
-          
-          else delay.wet.value = 0;*/
-        if (synth._voices.length>0) {
-            console.log(synth._voices.length);
-            //          console.log(synth._voices[0].oscillator.modulationType);
-            //        console.log(synth._voices[0].oscillator.harmonicity);
-        }
         synth.volume.value = this.parameters.volume.value;
         distortion.order = Math.floor(this.parameters.distortion.value);
         reverb.roomSize.value = 0.5;
@@ -241,6 +222,39 @@ const Synth2 = function(){
                 }
                 //
             });
+    }
+    this.updateAllParameters();
+    this.modifyParameter01 = function(index, value){
+
+        if (this.parameters[index].default === undefined){
+            this.parameters[index].default = this.parameters[index].value;
+        }
+        this.parameters[index].value = MathUtils.lerp(this.parameters[index].min,this.parameters[index].max,value);
+        this.updateAllParameters();
+    }
+    this.modifyParameter = function(index, value){
+
+        if (this.parameters[index].default === undefined){
+            this.parameters[index].default = this.parameters[index].value;
+        }
+        this.parameters[index].value = value;
+        this.updateAllParameters();
+    }
+    this.getDefault01 = function(index){
+        return (this.parameters[index].value-this.parameters[index].min)/(this.parameters[index].max-this.parameters[index].min);
+    }
+    this.play = function(pitch_index,effect){
+
+        const pitch = currentScaleFr * Math.pow(2, Math.floor(pitch_index/activeScale.length)+ activeScale[mod(pitch_index,activeScale.length)]/12);
+        /*  if (effect[0]>0)
+              delay.wet.value = effect[0];
+          
+          else delay.wet.value = 0;*/
+        if (synth._voices.length>0) {
+            console.log(synth._voices.length);
+            //          console.log(synth._voices[0].oscillator.modulationType);
+            //        console.log(synth._voices[0].oscillator.harmonicity);
+        }
         synth.triggerAttackRelease(pitch,this.parameters.sustainTime.value + this.parameters.attack.value);
     }
     this.releaseAll= function(){
@@ -264,12 +278,28 @@ const NoiseSynth = function(){
         playbackRate: {value:1,min:0.05,max:3}
         };
     this.parameterNames=["volume","attack","decay","noiseType","cutOffFrequency","playbackRate"];
+    this.updateAllParameters= function(){
+
+        synth.volume.value = this.parameters.volume.value;
+        lowPass.frequency.value = this.parameters.cutOffFrequency.value;
+        synth.noise.noiseType= noiseTypes[Math.floor(this.parameters.noiseType.value)];
+        synth.noise.playbackRate= this.parameters.playbackRate.value;
+        synth.envelope.set({
+            attack:this.parameters.attack.value,
+            decay: this.parameters.decay.value,
+            sustain:0.,
+            release:0.0
+            //
+        });
+    }
+    this.updateAllParameters();
     this.modifyParameter01 = function(index, value){
 
         if (this.parameters[index].default === undefined){
             this.parameters[index].default = this.parameters[index].value;
         }
         this.parameters[index].value = MathUtils.lerp(this.parameters[index].min,this.parameters[index].max,value);
+        this.updateAllParameters();
     }
     this.modifyParameter = function(index, value){
 
@@ -277,6 +307,7 @@ const NoiseSynth = function(){
             this.parameters[index].default = this.parameters[index].value;
         }
         this.parameters[index].value = value;
+        this.updateAllParameters();
     }
     this.getDefault01 = function(index){
         return (this.parameters[index].value-this.parameters[index].min)/(this.parameters[index].max-this.parameters[index].min);
@@ -286,17 +317,6 @@ const NoiseSynth = function(){
         const mod_pitch_index = pitch_index -20;
         //const pitch = currentScaleFr * Math.pow(2, Math.floor(mod_pitch_index/activeScale.length)+ activeScale[mod(mod_pitch_index,activeScale.length)]/12);
         const pitch = 300;
-        synth.volume.value = this.parameters.volume.value;
-        lowPass.frequency.value = this.parameters.cutOffFrequency.value;
-        synth.noise.noiseType= noiseTypes[Math.floor(this.parameters.noiseType.value)];
-        synth.noise.playbackRate= this.parameters.playbackRate.value;
-        synth.envelope.set({
-                attack:this.parameters.attack.value,
-                decay: this.parameters.decay.value,
-                sustain:0.,
-                release:0.0
-            //
-        });
      /*   if (synth._voices.length>0) {
             console.log(synth._voices[0]);
             console.log(synth._voices.length)
@@ -323,12 +343,42 @@ const Membrane = function(){
         feedback: {value:0.0,min:0,max:1.}
     };
     this.parameterNames=["volume","attack","pitchDecay","octaves","distortion","delayTime","feedback"];
+    this.updateAllParameters = function(){
+
+        distortion.order = Math.floor(this.parameters.distortion.value);
+        //reverb.dampening = this.parameters.dampening.value ;
+        tremolo.delayTime.value = this.parameters.delayTime.value;
+        tremolo.feedback.value = this.parameters.feedback.value;
+        /*  if (synth._voices.length>0) {
+              console.log(synth._voices.length);
+              console.log(synth._voices[0].octaves);
+              console.log(synth._voices[0].pitchDecay);
+              console.log(synth._voices[0].envelope.attack);
+              console.log(synth._voices[0].envelope.release);
+              console.log(synth._voices[0].envelope.decay);
+              console.log(synth._voices[0].envelope.sustain);
+          }*/
+        synth.volume.value = this.parameters.volume.value;
+        synth.set(
+            {
+                octaves: Math.floor(this.parameters.octaves.value),
+                //pitchDecay: this.parameters.pitchDecay.value,
+                envelope:{
+                    attack:this.parameters.attack.value,
+                    decay: this.parameters.pitchDecay.value,
+                    sustain:0.,
+                    release:0.0
+                }
+            });
+    }
+    this.updateAllParameters();
     this.modifyParameter01 = function(index, value){
 
         if (this.parameters[index].default === undefined){
             this.parameters[index].default = this.parameters[index].value;
         }
         this.parameters[index].value = MathUtils.lerp(this.parameters[index].min,this.parameters[index].max,value);
+        this.updateAllParameters();
     }
     this.modifyParameter = function(index, value){
 
@@ -336,39 +386,15 @@ const Membrane = function(){
             this.parameters[index].default = this.parameters[index].value;
         }
         this.parameters[index].value = value;
+        this.updateAllParameters();
     }
     this.getDefault01 = function(index){
         return (this.parameters[index].value-this.parameters[index].min)/(this.parameters[index].max-this.parameters[index].min);
     }
     this.play = function(pitch_index,effect){
-
+    
     const pitch = fr.C[0] * Math.pow(2, Math.floor(pitch_index/activeScale.length)+ activeScale[mod(pitch_index,activeScale.length)]/12);
 
-    distortion.order = Math.floor(this.parameters.distortion.value);
-    //reverb.dampening = this.parameters.dampening.value ;
-    tremolo.delayTime.value = this.parameters.delayTime.value;
-    tremolo.feedback.value = this.parameters.feedback.value;
-  /*  if (synth._voices.length>0) {
-        console.log(synth._voices.length);
-        console.log(synth._voices[0].octaves);
-        console.log(synth._voices[0].pitchDecay);
-        console.log(synth._voices[0].envelope.attack);
-        console.log(synth._voices[0].envelope.release);
-        console.log(synth._voices[0].envelope.decay);
-        console.log(synth._voices[0].envelope.sustain);
-    }*/
-    synth.volume.value = this.parameters.volume.value;
-    synth.set(
-    {
-        octaves: Math.floor(this.parameters.octaves.value),
-        //pitchDecay: this.parameters.pitchDecay.value,
-        envelope:{
-            attack:this.parameters.attack.value,
-            decay: this.parameters.pitchDecay.value,
-            sustain:0.,
-            release:0.0
-        }
-    });
     synth.triggerAttackRelease(pitch, this.parameters.attack.value+this.parameters.pitchDecay.value);
     }
     this.releaseAll= function(){
