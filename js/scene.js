@@ -30,10 +30,10 @@ document.styleSheets[0].insertRule('canvas { outline:none; border:none; }', 0);
 async function initModels(){
     game_pre_scene = new Scene();
     ui_pre_scene = new Scene();
-    const loader = new GLTFLoader().setPath('/models/');
+    const loader = new GLTFLoader().setPath('/public/models/');
 
 
-    const img_loader = new TextureLoader().setPath('/textures/');
+    const img_loader = new TextureLoader().setPath('public/textures/');
 
     const rgbw = await img_loader.loadAsync("rgbw.png");
     rgbw.flipY = false;
