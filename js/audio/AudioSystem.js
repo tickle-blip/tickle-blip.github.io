@@ -139,6 +139,9 @@ const Synth1 = function(){
         
         else delay.wet.value = 0;*/
         if (synth._voices.length>0) {
+            console.log(synth._voices.length)
+            console.log(Tone.Destination.blockTime);
+            console.log(Tone.Transport.sampleTime);
 //            console.log(synth._voices[0].oscillator.type);
   //          console.log(synth._voices[0].oscillator.modulationType);
     //        console.log(synth._voices[0].oscillator.harmonicity);
