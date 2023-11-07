@@ -168,7 +168,7 @@ const Synth1 = function(){
         synth.triggerAttackRelease(pitch,this.parameters.decay.value + this.parameters.attack.value);
         }
     this.releaseAll= function(){
-        synth.releaseAll();
+        synth.releaseAll(0);
     }
 }
 const Synth2 = function(){
@@ -244,7 +244,7 @@ const Synth2 = function(){
         synth.triggerAttackRelease(pitch,this.parameters.decay.value + this.parameters.attack.value);
     }
     this.releaseAll= function(){
-        synth.releaseAll();
+        synth.releaseAll(0);
     }
 }
 const NoiseSynth = function(){
@@ -426,7 +426,7 @@ const Membrane = function(){
     synth.triggerAttackRelease(pitch, this.parameters.attack.value+this.parameters.pitchDecay.value);
     }
     this.releaseAll= function(){
-        synth.releaseAll();
+        synth.releaseAll(0);
     }
 }
 
