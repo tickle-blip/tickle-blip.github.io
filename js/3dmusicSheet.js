@@ -68,7 +68,6 @@ let rotationActive;
 slp.style.width = `${canvas_aspect/0.804    *100}%`;
     
 const slider_ratio = 1-canvas_aspect/0.804;    
-console.log(slider_ratio)
 document.getElementById('sheetMenu').style.width=`${canvas.width}px`;
 
 showSheetCanvas(false);

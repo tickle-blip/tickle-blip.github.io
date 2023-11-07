@@ -69,7 +69,7 @@ function getPitchFromId(id_on_beat){
     return k;
 }
 const test_synth = new Tone.Synth().toDestination();
-export const modulationTypes = ["amsine","amsine2","amsquare","amtriangle","amsawtooth"];
+export const modulationTypes = ["sine","amsine","amsine2","amsquare","amtriangle","amsawtooth"];
 export const noiseTypes = ["white","brown","pink"];
 let addModifyEvent = function(arr) {
     if (arr.callbacks ===undefined)
@@ -89,12 +89,12 @@ let addModifyEvent = function(arr) {
 };
 
 //const lp_filter = new Tone.Filter(18000, "lowpass").toDestination();
-//const hp_filter = new Tone.Filter(3000, "highpass").connect(lp_filter);
-const hp_filter = new Tone.Limiter(-5).toDestination();
+//const hp_filter = new Tone.Filter(2000, "highpass").connect(lp_filter);
+const hp_filter = new Tone.Limiter(-10).toDestination();
 const Synth1 = function(){
     
-    const reverb = new Tone.JCReverb().connect(hp_filter);
-    const distortion = new Tone.Chebyshev (50).connect(reverb);
+    //const reverb = new Tone.JCReverb().connect(hp_filter);
+    const distortion = new Tone.Chebyshev (50).connect(hp_filter);
     const synth = new Tone.PolySynth(Tone.Synth, {
         oscillator: {
             type: "amtriangle",
@@ -162,7 +162,6 @@ const Synth1 = function(){
                 }
             //
         });
-        console.log(this.parameters)
         synth.triggerAttackRelease(pitch,this.parameters.decay.value + this.parameters.attack.value);
         }
 }
@@ -246,7 +245,6 @@ const NoiseSynth = function(){
         type:"highpass"
     }).connect(hp_filter);
     const synth = new Tone.NoiseSynth().connect(lowPass);
-    console.log(synth);
     this.name = "NoiseSynth";
     this.parameters = {
         volume:{value:-15,min:-50,max:-5},
