@@ -88,8 +88,11 @@ let addModifyEvent = function(arr) {
     }
 };
 
+const lp_filter = new Tone.Filter(10000, "lowpass").toDestination();
+const hp_filter = new Tone.Filter(3000, "highpass").connect(lp_filter);
 const Synth1 = function(){
-    const reverb = new Tone.JCReverb().toDestination();
+    
+    const reverb = new Tone.JCReverb().connect(hp_filter);
     const distortion = new Tone.Chebyshev (50).connect(reverb);
     const synth = new Tone.PolySynth(Tone.Synth, {
         oscillator: {
@@ -163,7 +166,7 @@ const Synth1 = function(){
         }
 }
 const Synth2 = function(){
-    const reverb = new Tone.JCReverb().toDestination();
+    const reverb = new Tone.JCReverb().connect(hp_filter);
     const distortion = new Tone.Chebyshev (50).connect(reverb);
     const synth = new Tone.PolySynth(Tone.Synth, {
         oscillator: {
@@ -236,10 +239,11 @@ const Synth2 = function(){
     }
 }
 const NoiseSynth = function(){
+    
     const lowPass = new Tone.Filter({
         frequency: 11000,
         type:"highpass"
-    }).toDestination();
+    }).connect(hp_filter);
     const synth = new Tone.NoiseSynth().connect(lowPass);
     console.log(synth);
     this.name = "NoiseSynth";
@@ -348,8 +352,8 @@ const FMSynth = function(){
     }
 }
 const Membrane = function(){
-    const tremolo = new Tone.FeedbackDelay ().toDestination();
-    const distortion = new Tone.Chebyshev (50).connect(tremolo).toDestination();
+    const tremolo = new Tone.FeedbackDelay ().connect(hp_filter);
+    const distortion = new Tone.Chebyshev (50).connect(tremolo).connect(hp_filter);
 const synth = new Tone.PolySynth(Tone.MembraneSynth).connect(distortion);
 this.name = "Membrane";        
     this.parameters = {
