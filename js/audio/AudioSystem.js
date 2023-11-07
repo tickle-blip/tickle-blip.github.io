@@ -93,8 +93,8 @@ let addModifyEvent = function(arr) {
 const hp_filter = new Tone.Limiter(-10).toDestination();
 const Synth1 = function(){
     
-    //const reverb = new Tone.JCReverb().connect(hp_filter);
-    const distortion = new Tone.Chebyshev (50).connect(hp_filter);
+    const reverb = new Tone.JCReverb().connect(hp_filter);
+    const distortion = new Tone.Chebyshev (50).connect(reverb);
     const synth = new Tone.PolySynth(Tone.Synth, {
         oscillator: {
             type: "amtriangle",
@@ -104,17 +104,17 @@ const Synth1 = function(){
             //partials: [0, 2, 3, 4],
         }
     }).connect(distortion);
-    this.name = "BasicSynth";
+    this.name = "AttackReleaseSynth";
     this.parameters = {
         volume:{value:-15,min:-50,max:-5},
-        attack:{value:0.05,min:0.005,max:3.},
-        decay: {value:0.5,min:0.01,max:4.},
+        attack:{value:0.05,min:0.005,max:1.},
+        release: {value:0.5,min:0.01,max:2.},
         harmonicity: {value:3,min:0.01,max:5.},
         waveform: {value:0,min:0,max:modulationTypes.length-1},
         distortion: {value:1,min:1,max:100.},
         reverb: {value:0.0,min:0,max:1.}
         };
-    this.parameterNames=["volume","attack","decay","harmonicity","waveform","distortion","reverb"    ];
+    this.parameterNames=["volume","attack","release","harmonicity","waveform","distortion","reverb"    ];
     this.modifyParameter01 = function(index, value){
 
         if (this.parameters[index].default === undefined){
@@ -149,24 +149,22 @@ const Synth1 = function(){
         }
         synth.volume.value = this.parameters.volume.value;
         distortion.order = Math.floor(this.parameters.distortion.value);
-        //reverb.dampening = this.parameters.dampening.value ;
-       // tremolo.dampening = this.parameters.parm20000.value;
-        //reverb.roomSize.value = this.parameters.reverb.value;
+        reverb.roomSize.value = this.parameters.reverb.value;
         synth.set(
         {
             oscillator: {
-                harmonicity: this.parameters.harmonicity.value,
+                harmonicity: Math.floor(this.parameters.harmonicity.value*10)/10,
                 type: modulationTypes[Math.floor(this.parameters.waveform.value)],
             },
             envelope:{
                 attack:this.parameters.attack.value,
-                decay: this.parameters.decay.value,
-                sustain:0.5,
-                release:0.0
+                decay: 0,
+                sustain:1.0,
+                release:this.parameters.release.value
                 }
             //
         });
-        synth.triggerAttackRelease(pitch,this.parameters.decay.value + this.parameters.attack.value);
+        synth.triggerAttackRelease(pitch,this.parameters.attack.value);
         }
     this.releaseAll= function(){
         synth.releaseAll(0);
@@ -180,21 +178,21 @@ const Synth2 = function(){
             type: "amsawtooth",
             decayCurve: "linear",
             harmonicity: 0.5,
-            modulationType: "triangle"
+            modulationType: "sine"
             //partials: [0, 2, 3, 4],
         }
     }).connect(distortion);
-    this.name = "BasicSynth";
+    this.name = "SustainSynth";
     this.parameters = {
         volume:{value:-15,min:-50,max:-5},
-        attack:{value:0.05,min:0.005,max:3.},
-        decay: {value:0.5,min:0.01,max:4.},
+        attack:{value:0.05,min:0.005,max:1.5},
+        sustainTime: {value:0.5,min:0.01,max:2.},
         harmonicity: {value:3,min:0.01,max:5.},
         waveform: {value:0,min:0,max:modulationTypes.length-1},
         distortion: {value:1,min:1,max:100.},
         reverb: {value:0.0,min:0,max:1.}
     };
-    this.parameterNames=["volume","attack","decay","harmonicity","waveform","distortion","reverb"    ];
+    this.parameterNames=["volume","attack","sustainTime","harmonicity","waveform","distortion","reverb"    ];
     this.modifyParameter01 = function(index, value){
 
         if (this.parameters[index].default === undefined){
@@ -220,30 +218,28 @@ const Synth2 = function(){
           
           else delay.wet.value = 0;*/
         if (synth._voices.length>0) {
-//            console.log(synth._voices[0].oscillator.type);
+            console.log(synth._voices.length);
             //          console.log(synth._voices[0].oscillator.modulationType);
             //        console.log(synth._voices[0].oscillator.harmonicity);
         }
         synth.volume.value = this.parameters.volume.value;
         distortion.order = Math.floor(this.parameters.distortion.value);
-        //reverb.dampening = this.parameters.dampening.value ;
-        // tremolo.dampening = this.parameters.parm20000.value;
         reverb.roomSize.value = this.parameters.reverb.value;
         synth.set(
             {
                 oscillator: {
-                    harmonicity: this.parameters.harmonicity.value,
+                    harmonicity: Math.floor(this.parameters.harmonicity.value*10)/10,
                     type: modulationTypes[Math.floor(this.parameters.waveform.value)],
                 },
                 envelope:{
                     attack:this.parameters.attack.value,
-                    decay: this.parameters.decay.value,
-                    sustain:0.,
-                    release:0.0
+                    decay: this.parameters.sustainTime.value,
+                    sustain:1.,
+                    release:0.05
                 }
                 //
             });
-        synth.triggerAttackRelease(pitch,this.parameters.decay.value + this.parameters.attack.value);
+        synth.triggerAttackRelease(pitch,this.parameters.sustainTime.value + this.parameters.attack.value);
     }
     this.releaseAll= function(){
         synth.releaseAll(0);
@@ -310,60 +306,6 @@ const NoiseSynth = function(){
     }
 }
 
-const FMSynth = function(){
-    const delay = new Tone.PingPongDelay ('16n',0.2);
-    const synth = new Tone.PolySynth(Tone.FMSynth, {
-        oscillator: {
-            partials: [0, 2, 3, 4],
-        }
-    }).toDestination();
-    this.name = "FMSynth";
-    this.parameters = {
-        volume:{value:-15,min:-50,max:-5},
-        attack:{value:0.005,min:0.005,max:3.},
-        decay: {value:0.5,min:0.01,max:4.},
-        harmonicity: {value:3,min:0.01,max:5.},
-        modulationAttack:{value:0.005,min:0.005,max:3.},
-        
-        modulationIndex: {value:12.22,min:0.01,max:15.}
-    };
-    this.parameterNames=["volume","attack","decay","harmonicity", "modulationAttack","modulationIndex"];
-    this.modifyParameter = function(index,value){
-        if (this.parameters[index].default === undefined){
-            this.parameters[index].default = this.parameters[index].value;
-        }
-        this.parameters[index].value = MathUtils.lerp(this.parameters[index].min,this.parameters[index].max,value);
-    }
-    this.getDefault01 = function(index){
-        return (this.parameters[index].value-this.parameters[index].min)/(this.parameters[index].max-this.parameters[index].min);
-    }
-    this.play = function(pitch_index,effect){
-
-        const pitch = currentScaleFr * Math.pow(2, Math.floor(pitch_index/activeScale.length)+ activeScale[mod(pitch_index,activeScale.length)]/12);
-
-        synth.volume.value = this.parameters.volume.value;
-        synth.set(
-            {
-                modulationIndex: this.parameters.modulationIndex.value,
-                harmonicity: this.parameters.harmonicity.value,
-                envelope:{
-                    attack:this.parameters.attack.value,
-                    decay: this.parameters.decay.value,
-                    sustain:0.,
-                    release:0.0
-                },
-                modulationEnvelope:{
-                    attack:this.parameters.modulationAttack.value,
-                    decay: this.parameters.decay.value,
-                    sustain:0.,
-                    release:0.0
-                }
-                //
-            });
-        
-        synth.triggerAttackRelease(pitch,this.parameters.decay.value + this.parameters.attack.value);
-    }
-}
 const Membrane = function(){
     const tremolo = new Tone.FeedbackDelay ().connect(hp_filter);
     const distortion = new Tone.Chebyshev (50).connect(tremolo).connect(hp_filter);
