@@ -149,7 +149,8 @@ const Synth1 = function(){
         }
         synth.volume.value = this.parameters.volume.value;
         distortion.order = Math.floor(this.parameters.distortion.value);
-        reverb.roomSize.value = this.parameters.reverb.value;
+        reverb.roomSize.value = 0.5;
+        reverb.wet.value = this.parameters.reverb.value;
         synth.set(
         {
             oscillator: {
@@ -224,7 +225,8 @@ const Synth2 = function(){
         }
         synth.volume.value = this.parameters.volume.value;
         distortion.order = Math.floor(this.parameters.distortion.value);
-        reverb.roomSize.value = this.parameters.reverb.value;
+        reverb.roomSize.value = 0.5;
+        reverb.wet.value = this.parameters.reverb.value;
         synth.set(
             {
                 oscillator: {
