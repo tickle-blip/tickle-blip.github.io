@@ -98,6 +98,7 @@ const Synth1 = function(){
     const synth = new Tone.PolySynth(Tone.Synth, {
         oscillator: {
             type: "amtriangle",
+            decayCurve: "linear",
             harmonicity: 0.5,
             modulationType: "sine"
             //partials: [0, 2, 3, 4],
@@ -160,7 +161,7 @@ const Synth1 = function(){
             envelope:{
                 attack:this.parameters.attack.value,
                 decay: this.parameters.decay.value,
-                sustain:0.,
+                sustain:0.5,
                 release:0.0
                 }
             //
@@ -177,6 +178,7 @@ const Synth2 = function(){
     const synth = new Tone.PolySynth(Tone.Synth, {
         oscillator: {
             type: "amsawtooth",
+            decayCurve: "linear",
             harmonicity: 0.5,
             modulationType: "triangle"
             //partials: [0, 2, 3, 4],
