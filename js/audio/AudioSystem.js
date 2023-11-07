@@ -167,6 +167,9 @@ const Synth1 = function(){
         });
         synth.triggerAttackRelease(pitch,this.parameters.decay.value + this.parameters.attack.value);
         }
+    this.releaseAll= function(){
+        synth.releaseAll();
+    }
 }
 const Synth2 = function(){
     const reverb = new Tone.JCReverb().connect(hp_filter);
@@ -240,6 +243,9 @@ const Synth2 = function(){
             });
         synth.triggerAttackRelease(pitch,this.parameters.decay.value + this.parameters.attack.value);
     }
+    this.releaseAll= function(){
+        synth.releaseAll();
+    }
 }
 const NoiseSynth = function(){
     
@@ -297,6 +303,9 @@ const NoiseSynth = function(){
         }*/
         synth.triggerAttackRelease(this.parameters.attack.value+this.parameters.decay.value);
         }
+    this.releaseAll= function(){
+        
+    }
 }
 
 const FMSynth = function(){
@@ -356,8 +365,8 @@ const FMSynth = function(){
 const Membrane = function(){
     const tremolo = new Tone.FeedbackDelay ().connect(hp_filter);
     const distortion = new Tone.Chebyshev (50).connect(tremolo).connect(hp_filter);
-const synth = new Tone.PolySynth(Tone.MembraneSynth).connect(distortion);
-this.name = "Membrane";        
+    const synth = new Tone.PolySynth(Tone.MembraneSynth).connect(distortion);
+    this.name = "Membrane";        
     this.parameters = {
         volume:{value:-15,min:-50,max:-5},
         attack:{value:0.001,min:0.001,max:1.5},
@@ -385,7 +394,7 @@ this.name = "Membrane";
     this.getDefault01 = function(index){
         return (this.parameters[index].value-this.parameters[index].min)/(this.parameters[index].max-this.parameters[index].min);
     }
-this.play = function(pitch_index,effect){
+    this.play = function(pitch_index,effect){
 
     const pitch = fr.C[0] * Math.pow(2, Math.floor(pitch_index/activeScale.length)+ activeScale[mod(pitch_index,activeScale.length)]/12);
 
@@ -415,6 +424,9 @@ this.play = function(pitch_index,effect){
         }
     });
     synth.triggerAttackRelease(pitch, this.parameters.attack.value+this.parameters.pitchDecay.value);
+    }
+    this.releaseAll= function(){
+        synth.releaseAll();
     }
 }
 

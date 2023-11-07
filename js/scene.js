@@ -322,6 +322,11 @@ document.getElementById("makeSong").addEventListener("click", function() {
 document.getElementById("editSongButton").addEventListener("click", function() {
     showGameUI(false);
     ecs.world.paused=true;
+    ecs.world.AudioSystem.instruments.forEach(
+        (instrument)=>{
+            instrument.releaseAll();
+        }
+    );
     showSheetCanvas(true);
 });
 
