@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="user-scalable=no, width=device-width, height=device-height,initial-scale=1" />
+  <meta charset="UTF-8">
+  <title>THEREMIN GAME</title>
+</head>
+<body>
+
+<script type="module" src="./js/scene.js"></script>
+
+<link href="style.css" rel="stylesheet" type="text/css" />
+<div id="startScreen" class="startScreen" style="display: block" >
+  <div class="buttons">
+    <h1>THEREMIN AUTO</h1>
+    <div id="chooseSong" class="btn btn-one">
+      <span>Choose Melody</span>
+    </div>
+    <div id="makeSong" class="btn btn-one">
+      <span>Create Melody</span>
+    </div>
+  </div>
+</div>
+<div id="pauseScreen" class="startScreen" style="display: none">
+  <h1>THEREMIN AUTO</h1>
+  <div class="buttons">
+    <div id="continueBtn" class="btn btn-one">
+      <span>Continue</span>
+    </div>
+    <div id="resetAndExitToMenu" class="btn btn-one">
+      <span>Exit To Menu</span>
+    </div>
+  </div>
+</div>
+<div id="endScreen" class="endScreen">
+  <h1>All Fingers Cut!</h1>
+  <div class="buttons">
+    <div id="gotomenu" class="btn btn-one">
+      <span>Go To Menu</span>
+    </div>
+  </div>
+</div>
+<div id="winScreen" class="startScreen" style="display:none; text-align:center;top:43%">
+  <div class="buttons">
+  <h1>Melody Done!</h1>
+    <div id="gotomenu_w" class="btn btn-one">
+      <span>Go To Menu</span>
+    </div>
+    <p style="font-size: 60%">Code For Melody Creation: sleepwell</p>
+  </div>
+</div>
+<div id="songList" class="songList" style="">
+  <div class="buttons" style="top:45%; transform: translate(0%,-50%);" >
+    <h1>Choose Melody</h1>
+    <div id="song1" class="melody btn btn-one" data-url="./songs/scatch.txt" > 
+      <span>MinorPentatonic</span>
+    </div>
+    <div id="song2" class="melody btn btn-one" data-url="./songs/dog_shit.txt">
+      <span>Of Dogs who go forward when do shit.  </span>
+    </div>
+  </div>
+    <div id="rtmm" class="btn btn-one" style="    top: 98%;
+    left: 99%;
+    transform: translate(-100%, -100%);
+    position: absolute;
+  ">
+      <span>Return To Menu</span>
+    </div>
+</div>
+
+<div id="playScreen" class="playScreen">
+
+  <div id="editSongButton" class="btn btn-one" style ="display: none">
+    <span>EditSong</span>
+  </div>
+  <div id="progressbar">
+    <div id="progressbar_position" class="progressbar_position"></div> <div id="progressbar_text"> <span>Melody Progress</span></div>
+  </div>
+  <div id="pausebtn" class="btn btn-one">
+    <span>Pause</span>
+  </div>
+</div>
+
+<div id="codeEntering" class="codeScreen" style="display: none">
+  <div id="codeInput" class="codeInput">
+  <p>To Unlock Melody Creation</p>
+    <p>Complete Any Melody And Enter Displayed Code</p>
+      <input id="input_text"></input>
+      <div id="submitButton" class="btn btn-one">Submit</div>
+      <div id="rtm" class="btn btn-one">
+        <span>Return To Menu</span>
+      </div>
+  </div>
+</div>
+<div id="musicSheetContainer" class="musicSheetContainer">
+
+  <canvas id="musicSheet" class="musicSheet">
+    <script type="module" src="./js/3dmusicSheet.js"></script>
+  </canvas>
+  <div id="sheet_songList" class = "loadMelody" >
+    <div class="buttons" style="top:45%; transform: translate(0%,-50%);" >
+      <h1 style="color: white">Choose Melody</h1>
+      <div id="sheet_song1" class="sheet_melody btn btn-one" data-url="./songs/scatch.txt" >
+        <span>MinorPentatonic</span>
+      </div>
+      <div id="sheet_song2" class="sheet_melody btn btn-one" data-url="./songs/dog_shit.txt">
+        <span>Of Dogs who go forward when do shit.  </span>
+      </div>
+    </div>
+    <div id="sheet_goback" class="btn btn-one" style="    top: 98%;
+    left: 99%;
+    transform: translate(-100%, -100%);
+    position: absolute;
+  ">
+      <span>Go Back</span>
+    </div>
+  </div>
+<div class = "settings-sliders">
+<div id="slider" class="slider">
+  <div id="slider_position" class="slider_position"></div> 
+</div>    
+<div class="settings">
+  <div id="sheet_tooltips" class="sheet_tooltips">
+      <span id="synth-name" class="synth-name">Select Synth</span>
+    <ul id="e-list" class="e-list">
+      <article>
+        <span class="paramName">parameter</span>
+        <span class="paramValue">0. </span>
+      </article>
+
+      <article>
+        <span class="paramName">parameter</span>
+        <span class="paramValue">0.</span>
+      </article>
+
+      <article>
+        <span class="paramName">parameter</span>
+        <span class="paramValue">0.</span>
+      </article>
+
+      <article>
+        <span class="paramName">parameter</span>
+        <span class="paramValue">0.</span>
+      </article>
+
+      <article>
+        <span class="paramName">parameter</span>
+        <span class="paramValue">0.</span>
+      </article>
+
+      <article>
+        <span class="paramName">parameter</span>
+        <span class="paramValue">0.</span>
+      </article>
+
+      <article>
+        <span class="paramName">parameter</span>
+        <span class="paramValue">0.</span>
+      </article>
+
+      <article>
+        <span class="paramName">parameter</span>
+        <span class="paramValue">0.</span>
+      </article>
+    </ul>
+  </div>
+  <div id="scale-div" class="scale-div">
+    <label for="scaleSelect">Scale:</label>
+    <select name="scaleSelect" id="scaleSelect" class="scale-menu">
+      <option value="majorScale">majorScale</option>
+      <option value="majorPentatonic">majorPentatonic</option>
+      <option value="minorPentatonic" >minorPentatonic</option>
+      <option value="bluesScale">bluesScale</option>
+      <option value="naturalMinorScale">naturalMinorScale</option>
+      <option value="melodicMinorScale">melodicMinorScale</option>
+    </select>
+    <label for="tonicSelect">Tonic:</label>
+    <select name="tonicSelect" id="tonicSelect" class="scale-menu">
+      <option value="C">C</option>
+      <option value="D">D</option>
+      <option value="E" >E</option>
+      <option value="F">F</option>
+      <option value="G">G</option>
+      <option value="A" selected>A</option>
+      <option value="B">B</option>
+    </select>
+    <label for="octaveSelect">Octave:</label>
+    <select name="octaveSelect" id="octaveSelect" class="scale-menu">
+      <option value="1">1</option>
+      <option value="2" selected >2</option>
+      <option value="3">3</option>
+      <option value="4" >4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+    </select>
+    <label for="speedSelect">Fly Speed:</label>
+    <select name="speedSelect" id="speedSelect" class="scale-menu">
+      <option value="1"  >1</option>
+      <option value="1.5">1.5</option>
+      <option value="2" >2</option>
+      <option value="2.5" selected>2.5</option>
+      <option value="3">3</option>
+      <option value="3.5">3.5</option>
+      <option value="4">4</option>
+    </select>
+  </div>
+</div>
+  </div>
+  <div id="sheetMenu" class="sheetMenu">
+
+
+    <div class="sheet_buttons">
+      <div id="playFromSheetBtn" class="btna btn-one">
+        <span>Play</span>
+      </div>
+
+      <div id="readFromJson" class="btna btn-one">
+        <span>ReadFromJson</span>
+      </div>
+      <div id="savemelody" class="btna btn-one">
+        <span>Save To Disk</span>
+      </div>      
+      <div id="closeSheetBtn" class="btna btn-one">
+      <span>Close</span>
+    </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
