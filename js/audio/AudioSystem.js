@@ -147,7 +147,7 @@ const Synth1 = function(){
         distortion.order = Math.floor(this.parameters.distortion.value);
         //reverb.dampening = this.parameters.dampening.value ;
        // tremolo.dampening = this.parameters.parm20000.value;
-        reverb.roomSize.value = this.parameters.reverb.value;
+        //reverb.roomSize.value = this.parameters.reverb.value;
         synth.set(
         {
             oscillator: {
