@@ -139,13 +139,12 @@ const Synth1 = function(){
     }
     this.updateAllParameters();
     
-    this.modifyParameter01 = function(index, value){
+    this.getParamValueFromNormRange = function(name, norm_value){
 
-        if (this.parameters[index].default === undefined){
-            this.parameters[index].default = this.parameters[index].value;
+        if (this.parameters[name].default === undefined){
+            this.parameters[name].default = this.parameters[name].value;
         }
-        this.parameters[index].value = MathUtils.lerp(this.parameters[index].min,this.parameters[index].max,value);
-        this.updateAllParameters();
+        return MathUtils.lerp(this.parameters[name].min,this.parameters[name].max,norm_value);
     }        
     this.modifyParameter = function(index, value){
 
@@ -224,13 +223,13 @@ const Synth2 = function(){
             });
     }
     this.updateAllParameters();
-    this.modifyParameter01 = function(index, value){
+    this.getParamValueFromNormRange = function(name, normValue){
 
-        if (this.parameters[index].default === undefined){
-            this.parameters[index].default = this.parameters[index].value;
+        if (this.parameters[name].default === undefined){
+            this.parameters[name].default = this.parameters[name].value;
         }
-        this.parameters[index].value = MathUtils.lerp(this.parameters[index].min,this.parameters[index].max,value);
-        this.updateAllParameters();
+        return MathUtils.lerp(this.parameters[name].min,this.parameters[name].max,normValue);
+        
     }
     this.modifyParameter = function(index, value){
 
@@ -293,13 +292,12 @@ const NoiseSynth = function(){
         });
     }
     this.updateAllParameters();
-    this.modifyParameter01 = function(index, value){
+    this.getParamValueFromNormRange = function(name, normValue){
 
-        if (this.parameters[index].default === undefined){
-            this.parameters[index].default = this.parameters[index].value;
+        if (this.parameters[name].default === undefined){
+            this.parameters[name].default = this.parameters[name].value;
         }
-        this.parameters[index].value = MathUtils.lerp(this.parameters[index].min,this.parameters[index].max,value);
-        this.updateAllParameters();
+        return MathUtils.lerp(this.parameters[name].min,this.parameters[name].max,normValue);
     }
     this.modifyParameter = function(index, value){
 
@@ -372,13 +370,13 @@ const Membrane = function(){
             });
     }
     this.updateAllParameters();
-    this.modifyParameter01 = function(index, value){
+    this.getParamValueFromNormRange = function(name, normValue){
 
-        if (this.parameters[index].default === undefined){
-            this.parameters[index].default = this.parameters[index].value;
+        if (this.parameters[name].default === undefined){
+            this.parameters[name].default = this.parameters[name].value;
         }
-        this.parameters[index].value = MathUtils.lerp(this.parameters[index].min,this.parameters[index].max,value);
-        this.updateAllParameters();
+        return MathUtils.lerp(this.parameters[name].min,this.parameters[name].max,normValue);
+        
     }
     this.modifyParameter = function(index, value){
 
@@ -599,6 +597,7 @@ export class AudioSystem
         this.#currentInstrumentsCount++;
         //this.melodyInstrumentID[n.beat * 40 + n.id_on_beat] = instrument_id;
         this.melodyInstrumentID.eventOnModify(n.beat * 40 + n.id_on_beat, instrument_id);
+        this.playInstrumentAt(note);        
     }
     getProgress(){
         return this.#currentInstrumentsCount/this.#totalInstrumentsCount;

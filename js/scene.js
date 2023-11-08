@@ -1,7 +1,15 @@
 ﻿import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {ECS_Container} from "./ecs/ecs.js";
 
-import {initUI, renderUI, showSheetCanvas, saveMelodyToDisk, parseMelodyJSON, clearMusicSheet} from './3dmusicSheet.js';
+import {
+    initUI,
+    renderUI,
+    showSheetCanvas,
+    saveMelodyToDisk,
+    parseMelodyJSON,
+    clearMusicSheet,
+    showSheetSongList
+} from './3dmusicSheet.js';
 import {
     AdditiveBlending,
     DoubleSide,
@@ -205,33 +213,6 @@ function showSongList(flag) {
         x.style.display = "none";
     }
 }
-function showSheetSongList(flag) {
-    let x = document.getElementById("sheet_songList");
-    
-    if (flag) {
-        x.style.display = "block";
-        document.querySelectorAll('span') // get all elements you want
-            .forEach( item => { // iterate over them and get every as "item"
-                if(item.offsetWidth > 250){ // check if it's widthter than parent
-                    console.log(item.offsetWidth)
-                    console.log(item.textContent)
-                    console.log(item.getAnimations()[0]);
-                    item.animate({
-                            transform: ['translateX(0px)', 'translateX(-'+(item.offsetWidth-250)+'px)']
-                        },
-                        {
-                            duration: 2000,
-                            iterations: Infinity,
-                            direction: 'alternate',
-                        })
-
-                   // item.classList.add('scrolled') // if is, add him class to scroll
-                }
-            })
-    } else {
-        x.style.display = "none";
-    }
-}
 function showGameUI(flag) {
     let x = document.getElementById("playScreen");
     if (flag) {
@@ -367,7 +348,8 @@ document.getElementById("rtmm").addEventListener("click", function() {
     showSongList(false);
     showMainMenu(true);
     //startGame();
-});document.getElementById("sheet_goback").addEventListener("click", function() {
+});
+document.getElementById("sheet_goback").addEventListener("click", function() {
     showSheetSongList(false);
     //startGame();
 });

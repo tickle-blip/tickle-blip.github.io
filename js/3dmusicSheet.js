@@ -102,7 +102,7 @@ const default_note = {
 };
 let wires = [];
 //events and input system
-
+let sheet_time=0;
 const uiInputSystem = new UIInputSystem(msc);
 
 msc.addEventListener('pointerdown', onPointerDown,false);
@@ -141,6 +141,7 @@ function onPointerUp( event ) {
     msc.releasePointerCapture( event.pointerId );
     if (rotationActive !== undefined && selected_instrument !== undefined && selected_instrument !==4) {
         const instrument = world.AudioSystem.instruments[selected_instrument];
+        instrument.modifyParameter(rotationActive.userData.parameter.name,rotationActive.userData.parameter.value);
         default_note.instrument = selected_instrument;
         console.log("playing note ", instrument)
         world.AudioSystem.playInstrumentAt(default_note);
@@ -712,8 +713,11 @@ export function initUI(ui_pre_scene,ecs_world) {
     
     for(let i=0;i<knob_matrices.length;i++){
         const v = new Vector3().setFromMatrixPosition(knob_matrices[knob_matrices.length-i-1]);
-        const k= knob_meshes[2].clone();
-        k.material = knob_meshes[2].material.clone();
+        const knob_index = Math.floor(Math.random()*(knob_meshes.length-1))+1;
+        console.log(knob_meshes.length)
+        console.log(knob_index)
+        const k= knob_meshes[knob_index].clone();
+        k.material = knob_meshes[knob_index].material.clone();
         k.rotateX(3.14 / 2);
         k.position.copy(v);
         k.material.color = new Color(colors[(i*3+offset)%(colors.length-3)], colors[(i*3+1+offset)%(colors.length-3)], colors[(i*3+2+offset)%(colors.length-3)]);
@@ -790,18 +794,29 @@ export function renderUI(){
             //instrument.parameters[instrument.parameterNames[-selected_id-1]] += is.current_input.diffY * 100;
             //instrument.parameters[instrument.parameterNames[-selected_id-1]] = Math.floor(instrument.parameters[instrument.parameterNames[-selected_id-1]]*100)/100;
 
-
-            rotationActive.userData.cachedRotation = rotationActive.userData.cachedRotation || instrument.getDefault01(instrument.parameterNames[-selected_id-1]);
+            const parameterName = instrument.parameterNames[-selected_id-1];
+            rotationActive.userData.cachedRotation = rotationActive.userData.cachedRotation || instrument.getDefault01(parameterName);
             rotationActive.userData.cachedRotation+=-uiInputSystem.current_input.diffY*10.;
             rotationActive.userData.cachedRotation = Math.min(Math.max(rotationActive.userData.cachedRotation,0),1);
 
-            
-            instrument.modifyParameter01(instrument.parameterNames[-selected_id-1],rotationActive.userData.cachedRotation);
-            console.log(instrument.parameters.decay)
-            changeSynthInfo(selected_instrument);
+            if (rotationActive.userData.parameter === undefined)
+                rotationActive.userData.parameter = {name:parameterName,value:instrument.getParamValueFromNormRange(parameterName,rotationActive.userData.cachedRotation)};
+            else {
+                rotationActive.userData.parameter.name = parameterName;
+                rotationActive.userData.parameter.value = instrument.getParamValueFromNormRange(parameterName, rotationActive.userData.cachedRotation);
+            }
+            changeSynthParamIndividual(selected_instrument,parameterName,rotationActive.userData.parameter.value);
             rotationActive.rotation.set(0,0,-rotationActive.userData.cachedRotation*3.14*2);
         }
         //rotationActive.rotateZ(is.current_input.diffY*10.);
+    }
+    if (selected_instrument === undefined){
+        sheet_time +=0.02;
+        mixer_knobs.forEach((e,i)=>{
+            const val = Math.sin(sheet_time*1+i)*6.28;
+            console.log(val);
+            e.rotation.set(0,0,val);
+        })
     }
     raycaster.setFromCamera(pointer,camera);
 
@@ -995,10 +1010,6 @@ function toFixed(x) {
 function changeSynthInfo(instrumentID){
     const instrument = world.AudioSystem.instruments[instrumentID]; 
     
-    let text = '';
-    text+= instrument.name;
-    text+='\n';
-
 
 
     for(let b =0;b<params_list.children.length;b++){
@@ -1008,19 +1019,15 @@ function changeSynthInfo(instrumentID){
 
     Object.keys(instrument.parameters).forEach((p,index)=>
     {
-        text+='\n';
         let paramValue;
         if (p === "waveform"){
-            text+=`${p}: ${modulationTypes[Math.floor(instrument.parameters[p].value)]}`;
             paramValue = modulationTypes[Math.floor(instrument.parameters[p].value)];
         }
         else if (p==="noiseType"){
-            text+=`${p}: ${noiseTypes[Math.floor(instrument.parameters[p].value)]}`;
             paramValue = noiseTypes[Math.floor(instrument.parameters[p].value)];
         }
         else {
             const displayed_val = instrument.parameters[p].value > 5? instrument.parameters[p].value.toFixed(0): instrument.parameters[p].value.toPrecision(2);
-            text += `${p}: ${displayed_val}`;
             paramValue = displayed_val;
         }
 
@@ -1029,7 +1036,31 @@ function changeSynthInfo(instrumentID){
     })
     synth_info.textContent=instrument.name;
 }
-function updateAllInstumentUI(){
+function changeSynthParamIndividual(instrumentID,paramName,paramValue){
+    const instrument = world.AudioSystem.instruments[instrumentID]; 
+    
+    
+    Object.keys(instrument.parameters).forEach((p,index)=>
+    {
+        if (p !== paramName) return;
+        
+        if (p === "waveform"){
+            paramValue = modulationTypes[Math.floor(paramValue)];
+        }
+        else if (p==="noiseType"){
+            paramValue = noiseTypes[Math.floor(paramValue)];
+        }
+        else {
+            const displayed_val = paramValue > 5? paramValue.toFixed(0): paramValue.toPrecision(2);
+            paramValue = displayed_val;
+        }
+
+        params_list.children[index].children[0].textContent =p;
+        params_list.children[index].children[1].textContent =paramValue;
+    })
+    synth_info.textContent=instrument.name;
+}
+export function updateAllInstumentUI(){
     for (let i=0;i<4;i++){
         changeSynthInfo(i);
     }
@@ -1076,11 +1107,13 @@ export function parseMelodyJSON(json,edit_mode=false){
             });
             world.Curve.geometryNeedsUpdate = true;
 
+            if (selected_instrument !== undefined && selected_instrument !==4)
+                changeSynthInfo(selected_instrument);
         });
     //set instrument parameters
 }
 export function clearMusicSheet(json,edit_mode=false){
-    
+
     tri_instance_meshes.forEach((mesh,index)=>{
         //world.AudioSystem.availableMelody[e.instrument].notes.push({beat:e.beat,id_on_beat:e.id_on_beat,pitch:e.pitch});
         for (let id_on_beat = 0; id_on_beat < 40; id_on_beat++) {
@@ -1088,4 +1121,34 @@ export function clearMusicSheet(json,edit_mode=false){
         }
         mesh.geometry.attributes.melodyInstrumentID.needsUpdate = true;
     });
+}
+
+export function showSheetSongList(flag) {
+    let x = document.getElementById("sheet_songList");
+
+    if (flag) {
+        msc.removeEventListener('pointerdown', onPointerDown,false);
+        x.style.display = "block";
+        document.querySelectorAll('span') // get all elements you want
+            .forEach( item => { // iterate over them and get every as "item"
+                if(item.offsetWidth > 250){ // check if it's widthter than parent
+                    console.log(item.offsetWidth)
+                    console.log(item.textContent)
+                    console.log(item.getAnimations()[0]);
+                    item.animate({
+                            transform: ['translateX(0px)', 'translateX(-'+(item.offsetWidth-250)+'px)']
+                        },
+                        {
+                            duration: 2000,
+                            iterations: Infinity,
+                            direction: 'alternate',
+                        })
+
+                    // item.classList.add('scrolled') // if is, add him class to scroll
+                }
+            })
+    } else {
+        msc.addEventListener('pointerdown', onPointerDown,false);
+        x.style.display = "none";
+    }
 }

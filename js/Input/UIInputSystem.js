@@ -62,7 +62,6 @@ export class UIInputSystem extends EventDispatcher {
                 pointerPositions[ event.pointerId ] = position;
 
             }
-            console.log(event.pageX,event.pageY);
             position.set( event.pageX, event.pageY );
 
         }
@@ -143,8 +142,6 @@ export class UIInputSystem extends EventDispatcher {
 
             trackPointer( event );
 
-            //console.log(oldX,oldY)
-            console.log("touch move",pointers);
             switch ( state ) {
 
                 case STATE.MOVE:

@@ -25,7 +25,8 @@ class WinEffect{
         world.GlobalParameters.rotationSpeed.value = 0.1;
         for (let i = 0; i < world.AudioSystem.melodyInstrumentID.length; i++) {
             //world.AudioSystem.melodyInstrumentID.eventOnModify(i, Math.floor(Math.random() * 4));
-            world.AudioSystem.melodyInstrumentID.eventOnModify(i, (i/40/2)%4);
+            if (world.AudioSystem.melodyInstrumentID[i]===4)
+                world.AudioSystem.melodyInstrumentID.eventOnModify(i, (i/40/2)%4);
         }
         this.initialized=true;
     }
