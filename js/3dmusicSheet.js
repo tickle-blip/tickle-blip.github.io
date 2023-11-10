@@ -793,17 +793,12 @@ export function renderUI(){
             const instrument = world.AudioSystem.instruments[selected_instrument];
             //instrument.parameters[instrument.parameterNames[-selected_id-1]] += is.current_input.diffY * 100;
             //instrument.parameters[instrument.parameterNames[-selected_id-1]] = Math.floor(instrument.parameters[instrument.parameterNames[-selected_id-1]]*100)/100;
-            console.log(rotationActive.name)
             const parameterName = instrument.parameterNames[-selected_id-1];
-            console.log(rotationActive.userData.cachedRotation)
             if (rotationActive.userData.cachedRotation === undefined){
                 rotationActive.userData.cachedRotation = instrument.getDefault01(parameterName);    
             }
-            console.log(rotationActive.userData.cachedRotation)
             rotationActive.userData.cachedRotation+=-uiInputSystem.current_input.diffY*10.;
-            console.log(rotationActive.userData.cachedRotation)
             rotationActive.userData.cachedRotation = Math.min(Math.max(rotationActive.userData.cachedRotation,0),1);
-            console.log(rotationActive.userData.cachedRotation)
             if (rotationActive.userData.parameter === undefined)
                 rotationActive.userData.parameter = {name:parameterName,value:instrument.getParamValueFromNormRange(parameterName,rotationActive.userData.cachedRotation)};
             else {

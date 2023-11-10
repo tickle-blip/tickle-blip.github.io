@@ -94,7 +94,7 @@ const hp_filter = new Tone.Limiter(-10).toDestination();
 const Synth1 = function(){
     
     const reverb = new Tone.JCReverb().connect(hp_filter);
-    const distortion = new Tone.Chebyshev (50).connect(reverb);
+    const distortion = new Tone.Distortion (1).connect(reverb);
     const synth = new Tone.PolySynth(Tone.Synth, {
         oscillator: {
             type: "amtriangle",
@@ -104,6 +104,7 @@ const Synth1 = function(){
             //partials: [0, 2, 3, 4],
         }
     }).connect(distortion);
+    synth
     this.name = "AttackReleaseSynth";
     this.parameters = {
         volume:{value:-15,min:-50,max:-5},
@@ -118,9 +119,10 @@ const Synth1 = function(){
 
     this.updateAllParameters = function(){
 
+        synth.maxPolyphony = 8;
         synth.volume.value = this.parameters.volume.value;
-        distortion.order = Math.floor(this.parameters.distortion.value);
-        reverb.roomSize.value = 0.5;
+        distortion.distortion = Math.floor(this.parameters.distortion.value)/100;
+        reverb.roomSize.value = 0.8;
         reverb.wet.value = this.parameters.reverb.value;
         synth.set(
             {
@@ -160,19 +162,20 @@ const Synth1 = function(){
     this.play = function(pitch_index,effect){
         
         const pitch = currentScaleFr * Math.pow(2, Math.floor(pitch_index/activeScale.length)+ activeScale[mod(pitch_index,activeScale.length)]/12);
-      /*  if (effect[0]>0)
-            delay.wet.value = effect[0];
-        
-        else delay.wet.value = 0;*/
-        if (synth._voices.length>0) {
-            console.log(synth._voices.length)
-            console.log(Tone.Destination.blockTime);
-            console.log(Tone.Transport.sampleTime);
-//            console.log(synth._voices[0].oscillator.type);
-  //          console.log(synth._voices[0].oscillator.modulationType);
-    //        console.log(synth._voices[0].oscillator.harmonicity);
+
+        console.log("synth.voices.length: "+ synth._voices.length);
+        console.log("synth.activeVoices.length: " + synth._activeVoices.length)
+        console.log("synth.availableVoices.length: "+ synth._availableVoices.length);
+        console.log("synth.maxPolyphony: " +synth.maxPolyphony);
+
+        if (synth.maxPolyphony>0 && synth._activeVoices.length===synth.maxPolyphony && synth._availableVoices.length===0){
+            //synth._activeVoices[0].voice.oscillator.stop();
+            console.log(synth._activeVoices[0])
+            synth._activeVoices[0].released=true;
+            synth._activeVoices[0].voice.triggerAttackRelease(pitch,this.parameters.attack.value);
         }
-        synth.triggerAttackRelease(pitch,this.parameters.attack.value);
+        else
+            synth.triggerAttackRelease(pitch,this.parameters.attack.value);
         }
     this.releaseAll= function(){
         synth.releaseAll(0);
@@ -198,15 +201,19 @@ const Synth2 = function(){
         harmonicity: {value:3,min:0.01,max:5.},
         waveform: {value:0,min:0,max:modulationTypes.length-1},
         distortion: {value:1,min:1,max:100.},
-        reverb: {value:0.0,min:0,max:1.}
+        reverb: {value:0.034,min:0,max:1.}
     };
     this.parameterNames=["volume","attack","sustainTime","harmonicity","waveform","distortion","reverb"    ]
     this.updateAllParameters = function(){
 
+        synth.maxPolyphony = 8;
         synth.volume.value = this.parameters.volume.value;
         distortion.order = Math.floor(this.parameters.distortion.value);
-        reverb.roomSize.value = 0.5;
+        reverb.roomSize.value = 0.8;
         reverb.wet.value = this.parameters.reverb.value;
+        //reverb.wet.value = 0;
+
+        //synth.maxPolyphony = Math.floor(this.parameters.reverb.value*32);
         synth.set(
             {
                 oscillator: {
@@ -245,16 +252,18 @@ const Synth2 = function(){
     this.play = function(pitch_index,effect){
 
         const pitch = currentScaleFr * Math.pow(2, Math.floor(pitch_index/activeScale.length)+ activeScale[mod(pitch_index,activeScale.length)]/12);
-        /*  if (effect[0]>0)
-              delay.wet.value = effect[0];
-          
-          else delay.wet.value = 0;*/
-        if (synth._voices.length>0) {
-            console.log(synth._voices.length);
-            //          console.log(synth._voices[0].oscillator.modulationType);
-            //        console.log(synth._voices[0].oscillator.harmonicity);
+        
+        
+
+
+        if (synth.maxPolyphony>0 && synth._activeVoices.length===synth.maxPolyphony && synth._availableVoices.length===0){
+            //synth._activeVoices[0].voice.oscillator.stop();
+            console.log(synth._activeVoices[0])
+            synth._activeVoices[0].released=true;
+            synth._activeVoices[0].voice.triggerAttackRelease(pitch,this.parameters.sustainTime.value + this.parameters.attack.value);
         }
-        synth.triggerAttackRelease(pitch,this.parameters.sustainTime.value + this.parameters.attack.value);
+        else
+            synth.triggerAttackRelease(pitch,this.parameters.sustainTime.value + this.parameters.attack.value);
     }
     this.releaseAll= function(){
         synth.releaseAll(0);
@@ -347,6 +356,7 @@ const Membrane = function(){
         //reverb.dampening = this.parameters.dampening.value ;
         tremolo.delayTime.value = this.parameters.delayTime.value;
         tremolo.feedback.value = this.parameters.feedback.value;
+        synth.maxPolyphony=8;
         /*  if (synth._voices.length>0) {
               console.log(synth._voices.length);
               console.log(synth._voices[0].octaves);
@@ -393,8 +403,17 @@ const Membrane = function(){
     
     const pitch = fr.C[0] * Math.pow(2, Math.floor(pitch_index/activeScale.length)+ activeScale[mod(pitch_index,activeScale.length)]/12);
 
-    synth.triggerAttackRelease(pitch, this.parameters.attack.value+this.parameters.pitchDecay.value);
+
+        if (synth.maxPolyphony>0 && synth._activeVoices.length===synth.maxPolyphony && synth._availableVoices.length===0){
+            //synth._activeVoices[0].voice.oscillator.stop();
+            console.log(synth._activeVoices[0])
+            synth._activeVoices[0].released=true;
+            synth._activeVoices[0].voice.triggerAttackRelease(pitch,this.parameters.pitchDecay.value + this.parameters.attack.value);
+        }
+        else
+            synth.triggerAttackRelease(pitch, this.parameters.attack.value+this.parameters.pitchDecay.value);
     }
+    
     this.releaseAll= function(){
         synth.releaseAll(0);
     }
