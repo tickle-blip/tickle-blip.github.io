@@ -333,6 +333,7 @@ document.getElementById("playFromSheetBtn").addEventListener("click", function()
     showSheetCanvas(false);
     ecs.world.editMode=true;
     showGameUI(true);
+    
     startGame();
 });
 document.getElementById("closeSheetBtn").addEventListener("click", function() {
@@ -381,11 +382,11 @@ document.getElementById("savemelody").addEventListener("click", function() {
 document.getElementById("readFromJson").addEventListener("click", function() {
     //parseMelodyJSON(0,true);
     showSheetSongList(true);
-    document.getElementById('scaleSelect').value = ecs.world.AudioSystem.getActiveScale();
-    const ta = ecs.world.AudioSystem.getCurrentTonicAndOctave();
-    document.getElementById('tonicSelect').value = ta.tonic;
-    document.getElementById('octaveSelect').value = ta.octave;
-    document.getElementById('speedSelect').value = ecs.world.GlobalParameters.speed;
+    //document.getElementById('scaleSelect').value = ecs.world.AudioSystem.getActiveScale();
+    //const ta = ecs.world.AudioSystem.getCurrentTonicAndOctave();
+    //document.getElementById('tonicSelect').value = ta.tonic;
+    //document.getElementById('octaveSelect').value = ta.octave;
+    //document.getElementById('speedSelect').value = ecs.world.GlobalParameters.speed;
 });
 document.getElementById('scaleSelect').onchange = (event) => {
     ecs.world.AudioSystem.setActiveScale(event.target.value);

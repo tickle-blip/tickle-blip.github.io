@@ -143,7 +143,6 @@ function onPointerUp( event ) {
         const instrument = world.AudioSystem.instruments[selected_instrument];
         instrument.modifyParameter(rotationActive.userData.parameter.name,rotationActive.userData.parameter.value);
         default_note.instrument = selected_instrument;
-        console.log("playing note ", instrument)
         world.AudioSystem.playInstrumentAt(default_note);
     }
     rotationActive = undefined;
@@ -714,8 +713,6 @@ export function initUI(ui_pre_scene,ecs_world) {
     for(let i=0;i<knob_matrices.length;i++){
         const v = new Vector3().setFromMatrixPosition(knob_matrices[knob_matrices.length-i-1]);
         const knob_index = Math.floor(Math.random()*(knob_meshes.length-1))+1;
-        console.log(knob_meshes.length)
-        console.log(knob_index)
         const k= knob_meshes[knob_index].clone();
         k.material = knob_meshes[knob_index].material.clone();
         k.rotateX(3.14 / 2);
@@ -811,10 +808,9 @@ export function renderUI(){
         //rotationActive.rotateZ(is.current_input.diffY*10.);
     }
     if (selected_instrument === undefined){
-        sheet_time +=0.02;
+        sheet_time +=0.015;
         mixer_knobs.forEach((e,i)=>{
             const val = Math.sin(sheet_time*1+i)*6.28;
-            console.log(val);
             e.rotation.set(0,0,val);
         })
     }
@@ -1027,7 +1023,7 @@ function changeSynthInfo(instrumentID){
             paramValue = noiseTypes[Math.floor(instrument.parameters[p].value)];
         }
         else {
-            const displayed_val = instrument.parameters[p].value > 5? instrument.parameters[p].value.toFixed(0): instrument.parameters[p].value.toPrecision(2);
+            const displayed_val = instrument.parameters[p].max > 5? instrument.parameters[p].value.toFixed(0): instrument.parameters[p].value.toFixed(2);
             paramValue = displayed_val;
         }
 
@@ -1093,6 +1089,7 @@ export function parseMelodyJSON(json,edit_mode=false){
             if (song_data.speed !== undefined) {
                 world.GlobalParameters.speed = song_data.speed;
                 world.camera.userData.speed = song_data.speed;
+                document.getElementById('speedSelect').value = song_data.speed;
             }
             
             song_data.melody.forEach((e)=>{
@@ -1106,7 +1103,14 @@ export function parseMelodyJSON(json,edit_mode=false){
                 e.geometry.attributes.melodyInstrumentID.needsUpdate = true
             });
             world.Curve.geometryNeedsUpdate = true;
-
+            
+            if (song_data.scale !== undefined)
+                (document.getElementById('scaleSelect').value = song_data.scale);
+            console.log(song_data.tonicOctave)
+            if (song_data.tonicOctave !== undefined) {
+                (document.getElementById('tonicSelect').value = song_data.tonicOctave.tonic);
+                (document.getElementById('octaveSelect').value = song_data.tonicOctave.octave)
+            }
             if (selected_instrument !== undefined && selected_instrument !==4)
                 changeSynthInfo(selected_instrument);
         });
@@ -1114,6 +1118,11 @@ export function parseMelodyJSON(json,edit_mode=false){
 }
 export function clearMusicSheet(json,edit_mode=false){
 
+    document.getElementById('scaleSelect').value = world.AudioSystem.getDefaultScale();
+    const {tonic, octave} = world.AudioSystem.getDefaultTonicAndOctave(); 
+    document.getElementById('tonicSelect').value = tonic;
+    document.getElementById('octaveSelect').value = octave;
+    document.getElementById('speedSelect').value = 2.5;
     tri_instance_meshes.forEach((mesh,index)=>{
         //world.AudioSystem.availableMelody[e.instrument].notes.push({beat:e.beat,id_on_beat:e.id_on_beat,pitch:e.pitch});
         for (let id_on_beat = 0; id_on_beat < 40; id_on_beat++) {

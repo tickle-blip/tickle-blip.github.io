@@ -215,11 +215,11 @@ class ECS_Container
         this.world.geometry.level = [];
         this.world.geometry.level = new FlowLevelGroup(loops_number,knob_matrices);
       
-        const kno = this.world.geometry.level.addObject(InstancedFlowRenderable,knobs,{activeEffectID:{value:this.world.AudioSystem.activeEffectID}, barLoops: {value:this.world.GlobalParameters.loops}, rotationSpeed: this.world.GlobalParameters.rotationSpeed, triAmplitude: this.world.GlobalParameters.triAmplitude});
+       // const kno = this.world.geometry.level.addObject(InstancedFlowRenderable,knobs,{activeEffectID:{value:this.world.AudioSystem.activeEffectID}, barLoops: {value:this.world.GlobalParameters.loops}, rotationSpeed: this.world.GlobalParameters.rotationSpeed, triAmplitude: this.world.GlobalParameters.triAmplitude});
         
-        kno.object3D.forEach((e)=>{
-            this.#game_scene.add(e);
-        });
+       // kno.object3D.forEach((e)=>{
+       //     this.#game_scene.add(e);
+     //   });
         const tri = this.world.geometry.level.addObject(TriInstancedFlowRenderable, tube_part, {melodyInstrumentID: {value:this.world.AudioSystem.melodyInstrumentID}, rotationSpeed: this.world.GlobalParameters.rotationSpeed, triAmplitude: this.world.GlobalParameters.triAmplitude});
         this.#game_scene.add(tri.object3D);
 
@@ -253,10 +253,11 @@ class ECS_Container
         this.world.geometry.interactives = [];
         
         knobs.forEach((e)=>{
-            const l= new InteractionInstancedFlowRenderable(this.world.GlobalParameters.curveCount, e, e.material, 100)
+           // const l= new InteractionInstancedFlowRenderable(this.world.GlobalParameters.curveCount, e, e.material, 100)
             
-            this.world.geometry.interactives.push(l);
-            this.#game_scene.add(l.object3D)});
+            //this.world.geometry.interactives.push(l);
+        //    this.#game_scene.add(l.object3D)
+        });
 
 
         const tri_interaction= new InteractionInstancedFlowRenderable(this.world.GlobalParameters.curveCount, tube_part, tube_part.material, 400,modifyTriInteractionShader)

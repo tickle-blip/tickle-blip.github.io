@@ -87,8 +87,8 @@ export const cameraMovementSystem = (world) => {
 
         if (!world.win) {
             if (world.Input.current_input.mouseMove) {
-                obj3d.userData.dirV.x += world.Input.current_input.diffX * 2 * 3.14;
-                obj3d.userData.dirV.y -= world.Input.current_input.diffY * 2 * 3.14;
+                obj3d.userData.dirV.x += world.Input.current_input.diffX * 4 * 3.14;
+                obj3d.userData.dirV.y -= world.Input.current_input.diffY * 4 * 3.14;
                 //obj3d.userData.dirV.set(world.Input.current_input.pointerX - world.Input.current_input.startX, world.Input.current_input.pointerY - world.Input.current_input.startY, 0);
             }
             {
@@ -97,10 +97,12 @@ export const cameraMovementSystem = (world) => {
                 //obj3d.userData.dirV.set(world.Input.current_input.pointerX - world.Input.current_input.startX, world.Input.current_input.pointerY - world.Input.current_input.startY, 0);
             }
         }
-        
+        obj3d.userData.dirV.x = Math.min(Math.max(obj3d.userData.dirV.x, -1), 1);
+        obj3d.userData.dirV.y = Math.min(Math.max(obj3d.userData.dirV.y, -1), 1);
         const p = world.Curve.pos.clone();
        
         offset.copy(obj3d.userData.dirV);
+        
         let z_dir= (Math.max(0.5,1 - offset.length()));
         //z_dir *=z_dir;
 
@@ -126,8 +128,9 @@ export const cameraMovementSystem = (world) => {
             damp3(obj3d.userData.offset, v3.set(0, 0, 0), 0.25, world.time.delta)
         }
         obj3d.position.copy(p.add(obj3d.userData.offset));
-        offset.add(world.Curve.tangent.clone().multiplyScalar(z_dir));
         obj3d.up.copy(world.Curve.normal);
+        
+        offset.add(world.Curve.tangent.clone().multiplyScalar(z_dir*2));
 
         obj3d.lookAt(p.clone().add(offset))
     }

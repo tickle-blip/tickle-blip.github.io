@@ -23,10 +23,18 @@ class WinEffect{
         this.timer =this.global_timer = 0;
         this.done = false;
         world.GlobalParameters.rotationSpeed.value = 0.1;
+        this.colors_array=[];
+        for (let i = 0; i < world.AudioSystem.melodyInstrumentID.length; i++) {
+            this.colors_array.push((i/40/2)%4);
+        }
+        this.ignored_positions_array=[];
         for (let i = 0; i < world.AudioSystem.melodyInstrumentID.length; i++) {
             //world.AudioSystem.melodyInstrumentID.eventOnModify(i, Math.floor(Math.random() * 4));
             if (world.AudioSystem.melodyInstrumentID[i]===4)
-                world.AudioSystem.melodyInstrumentID.eventOnModify(i, (i/40/2)%4);
+                world.AudioSystem.melodyInstrumentID.eventOnModify(i, this.colors_array[i]);
+            else{
+                this.ignored_positions_array.push(i);
+            }
         }
         this.initialized=true;
     }
@@ -39,10 +47,12 @@ class WinEffect{
     }
     play(world){
         if (this.timer>this.visual_step){
-            const new_arr = shift(world.AudioSystem.melodyInstrumentID,1,40);
+            const new_arr = shift(this.colors_array,1,40);
             for (let i = 0; i < world.AudioSystem.melodyInstrumentID.length; i++) {
                 //world.AudioSystem.melodyInstrumentID.eventOnModify(i, (world.AudioSystem.melodyInstrumentID[i]+1)%4);
-                world.AudioSystem.melodyInstrumentID.eventOnModify(i,new_arr[i]);
+                this.colors_array[i]=new_arr[i];
+                if (this.ignored_positions_array.indexOf(i)===-1)
+                    world.AudioSystem.melodyInstrumentID.eventOnModify(i,this.colors_array[i]);
             }
             this.timer = 0;
         }

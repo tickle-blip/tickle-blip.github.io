@@ -45,8 +45,8 @@ function clamp(value, min, max) {
 export const animationSystem = (world) => {
     const camera = world.camera;
     //world.mixer
-    const horisontal = clamp(camera.userData.dirV.x,-1,1);
-    const vertical = clamp(camera.userData.dirV.y,-1,1);
+    const horisontal = clamp(camera.userData.dirV.x/1.2,-1,1);
+    const vertical = clamp(camera.userData.dirV.y/1,-0.5,1);
     const left_weight = horisontal < 0 ? -horisontal : 0;
     const right_weight = horisontal > 0 ? horisontal : 0;
     setWeight(world.hand_actions[1],left_weight);

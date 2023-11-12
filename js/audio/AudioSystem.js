@@ -24,8 +24,11 @@ const fr = {
     "Bb":   [29.14, 58.27, 116.54, 233.08, 466.16, 932.33, 1864.66, 3729.31],
     "B":   [30.87, 61.74, 123.47, 246.94, 493.88, 987.77, 1975.53, 3951.07]
 };
-let currentScaleFr = fr.A[2];
+const default_tonic= "A";
+const default_octave = 2;
+const default_scale = "majorScale";
 const tonicOctave = {tonic: "A", octave: 2};
+let currentScaleFr = fr.A[2];
 const majorPentatonic = [0,2,4,7,9];
 const bluesScale = [0,3,5,6,7,10];  
 const minorPentatonic = [0,3,5,7,10]; 
@@ -40,7 +43,7 @@ const scales = {
     "melodicMinorScale": melodicMinorScale,
     "naturalMinorScale": naturalMinorScale
 }
-let activeScale = bluesScale;
+let activeScale = majorScale;
 
 const drumRack = ['bd', 'sn', 'hh', 'cp', 'mt', 'ht', 'lt'];
 function shuffle(array) {
@@ -119,7 +122,7 @@ const Synth1 = function(){
 
     this.updateAllParameters = function(){
 
-        synth.maxPolyphony = 8;
+        synth.maxPolyphony = 10;
         synth.volume.value = this.parameters.volume.value;
         distortion.distortion = Math.floor(this.parameters.distortion.value)/100;
         reverb.roomSize.value = 0.8;
@@ -206,7 +209,7 @@ const Synth2 = function(){
     this.parameterNames=["volume","attack","sustainTime","harmonicity","waveform","distortion","reverb"    ]
     this.updateAllParameters = function(){
 
-        synth.maxPolyphony = 8;
+        synth.maxPolyphony = 10;
         synth.volume.value = this.parameters.volume.value;
         distortion.order = Math.floor(this.parameters.distortion.value);
         reverb.roomSize.value = 0.8;
@@ -356,7 +359,7 @@ const Membrane = function(){
         //reverb.dampening = this.parameters.dampening.value ;
         tremolo.delayTime.value = this.parameters.delayTime.value;
         tremolo.feedback.value = this.parameters.feedback.value;
-        synth.maxPolyphony=8;
+        synth.maxPolyphony = 10;
         /*  if (synth._voices.length>0) {
               console.log(synth._voices.length);
               console.log(synth._voices[0].octaves);
@@ -465,6 +468,7 @@ export class AudioSystem
         var data = {
             name: songName,
             scale: "",
+            tonicOctave: tonicOctave,
             Synth1:{},
             Synth2:{},
             Synth3:{},
@@ -501,6 +505,12 @@ export class AudioSystem
         });
         return "bluesScale";
     }
+    getDefaultScale(){
+        return default_scale;
+    }
+    getDefaultTonicAndOctave(){
+        return {tonic:default_tonic,octave:default_octave};
+    }
     setTonicAndOctave(tonic,octave){
         if (tonic !== undefined )
             tonicOctave.tonic = tonic;
@@ -515,6 +525,8 @@ export class AudioSystem
     setMelodyFromJsonData(song_data,edit_mode=false){
         if (song_data.scale !== undefined)
             activeScale = scales[song_data.scale];
+        if (song_data.tonicOctave !== undefined)
+            this.setTonicAndOctave(song_data.tonicOctave.tonic, song_data.tonicOctave.octave);
         console.log(activeScale)
         for (let i=0;i<4;i++){
             const instrument = this.instruments[i];
