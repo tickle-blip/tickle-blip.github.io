@@ -56,6 +56,16 @@ acl.addEventListener("reading", () => {
 
 
 window.addEventListener("deviceorientation", handleOrientation, true);
+function handleMotionEvent(event) {
+
+    var x = event.accelerationIncludingGravity.x;
+    var y = event.accelerationIncludingGravity.y;
+    var z = event.accelerationIncludingGravity.z;
+console.log("motionevent",x,y,z);
+    // Do something awesome.
+}
+
+window.addEventListener("devicemotion", handleMotionEvent, true);
 function handleOrientation(event) {
     var absolute = event.absolute;
     var alpha    = event.alpha;
