@@ -111,6 +111,7 @@ span {
     flex-direction: column;
     
     position: relative;
+    /*backdrop-filter: blur(5px);*/
 }
 .buttonsBottom {
     width:100%;
@@ -407,4 +408,15 @@ span {
     flex-direction: column;
     align-items: center;
     
+}
+
+#aboutscreen .buttons p a
+{
+    color: #fefefe;
+    text-decoration: underline;
+    font-family:'digital-clock-font';
+    font-size: 1em;
+    overflow: hidden;
+    flex-grow: 1;
+    background-color: rgba(178,25,25,0.1);
 }

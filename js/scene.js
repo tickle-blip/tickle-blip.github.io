@@ -10,10 +10,17 @@ import {
     clearMusicSheet,
     showSheetSongList
 } from './3dmusicSheet.js';
+
+import {
+    initUI as initHowToPlayUI,
+    renderUI as renderHowToPlayUI,
+} from './howToPlayScreen.js';
+
 import {
     AdditiveBlending,
     DoubleSide,
     MeshPhongMaterial,
+    MeshBasicMaterial,
     RepeatWrapping,
     Scene,
     SRGBColorSpace,
@@ -25,6 +32,7 @@ let ecs;
 
 let game_pre_scene;
 let ui_pre_scene;
+let how_to_play_pre_scene;
 let camera;
 let game_started = false;
 //initialization
@@ -32,12 +40,38 @@ await initModels().catch((err)=> console.error(err));
 
 initECS();
 initUI(ui_pre_scene,ecs.world);
+//initHowToPlayUI(how_to_play_pre_scene,ecs.world);
 
 ecs.update();
+//const acl = new Accelerometer({ frequency: 60 });
+/*
+acl.addEventListener("reading", () => {
+    console.log(`Acceleration along the X-axis ${acl.x}`);
+    console.log(`Acceleration along the Y-axis ${acl.y}`);
+    console.log(`Acceleration along the Z-axis ${acl.z}`);
+});
+*/
+
+//acl.start();
+
+
+window.addEventListener("deviceorientation", handleOrientation, true);
+function handleOrientation(event) {
+    var absolute = event.absolute;
+    var alpha    = event.alpha;
+    var beta     = event.beta;
+    var gamma    = event.gamma;
+    // Do stuff with the new orientation data
+    console.log(absolute);
+    console.log(alpha);
+    console.log(beta);
+    console.log(gamma);
+}
 document.styleSheets[0].insertRule('canvas { outline:none; border:none; }', 0);
 async function initModels(){
     game_pre_scene = new Scene();
     ui_pre_scene = new Scene();
+    how_to_play_pre_scene = new Scene();
     const loader = new GLTFLoader().setPath('/models/');
 
 
@@ -59,7 +93,7 @@ async function initModels(){
     game_pre_scene.add(TO_Body);
     
     ui_pre_scene.add(TO_Body.clone());
-    
+    how_to_play_pre_scene.add(TO_Body.clone());
     const knob_mats = await loader.loadAsync('knob_mat.gltf');
     game_pre_scene.add(knob_mats.scene.children[0]);
     
@@ -117,8 +151,10 @@ async function initModels(){
     hand.scene.children[0].animations = hand.animations;
     hand.scene.children[0].children[0].material = new MeshPhongMaterial({color: 0xffffff,emissive: 0x333333});
     hand.scene.children[0].children[0].material.roughness = 0.0;
-    game_pre_scene.add(hand.scene.children[0]);
+    const h = hand.scene.children[0];
+    game_pre_scene.add(h);
     
+    how_to_play_pre_scene.add(h.clone());
     const e = await loader.loadAsync('electricity.gltf');
     const electricity = e.scene.children[0];
     electricity.name = "ELECTRICITY";
@@ -137,7 +173,7 @@ async function initModels(){
     electricity_tex.repeat = new Vector2(1,1);
     electricity.material.map = electricity_tex;
     game_pre_scene.add(electricity);
-
+    how_to_play_pre_scene.add(electricity.clone());
 
     const b = await loader.loadAsync('bomb.gltf');
     const bomb = b.scene.children[0];
@@ -153,6 +189,7 @@ async function initModels(){
     //bomb.material.map = laser_tex;
 
     game_pre_scene.add(bomb);
+    how_to_play_pre_scene.add(bomb.clone());
 }
 
 function initECS(){
@@ -430,6 +467,7 @@ animate();
 function animate(){
     requestAnimationFrame(animate );
     renderUI();
+    //renderHowToPlayUI();
     //input update
     //curve update
     ecs.update();

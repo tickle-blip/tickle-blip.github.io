@@ -25,17 +25,8 @@ import {modulationTypes, noiseTypes} from "./audio/AudioSystem.js";
 
 let ui_visible = false;
 
-const canvas = document.getElementById("musicSheet");
-const msc = document.getElementById("musicSheetContainer");
-const sl = document.getElementById("slider");
-const slp = document.getElementById("slider_position");
-const menu = document.getElementById("sheetMenu");
-const sheet_tooltips = document.getElementById("sheet_tooltips");
-const scale_div = document.getElementById("scale-div");
-const synth_info = document.getElementById("synth-name");
-const params_list = document.getElementById("e-list");
-const sheet_song_list = document.getElementById("sheet_songList");
-
+const canvas = document.getElementById("howToPlayScreen");
+const msc = document.getElementById("howToPlayContainer");
 const first_row = [28,38,29,39,20,30,21,31,22,32,23,33,24,34,25,35,26,36,27,37];
 const second_row = [18,17,16,13,12,11,10,8,7,6,5,3,4,2,9,14,15,1,0,19];
 const colors= [ 0.05,0.2,0.6, 0.1,0.6,0.3, 0.5,0.5,0.65, 0.7,0.1,0.1, 0.05,0.05,0.05];
@@ -60,17 +51,16 @@ let rotationActive;
 
     camera = new OrthographicCamera(canvas_aspect*camera_size/-2,canvas_aspect*camera_size/2,camera_size/2,camera_size/-2,1,1000);
 
-    camera.position.y=-0.1;
+    //camera.position.y=-0.1;
     camera.position.z = 5;
-    camera.position.y = -2.5;
+    //camera.position.y = -2.5;
     camera.lookAt(0,0,0);
 }
-slp.style.width = `${canvas_aspect/0.804    *100}%`;
     
 const slider_ratio = 1-canvas_aspect/0.804;    
 document.getElementById('sheetMenu').style.width=`${canvas.width}px`;
 
-showSheetCanvas(false);
+//showSheetCanvas(false);
 
 //create Renderer
 let renderer = new WebGLRenderer( {canvas:canvas, antialias: true, alpha:true } );
@@ -80,6 +70,7 @@ renderer.shadowMap.type = PCFSoftShadowMap; // default THREE.PCFShadowMap
 
 
 let to_body;
+let electricity;
 const uniforms = {};
 const raycaster = new Raycaster();
 const pointer = new Vector2();
@@ -106,7 +97,6 @@ let sheet_time=0;
 const uiInputSystem = new UIInputSystem(msc);
 
 msc.addEventListener('pointerdown', onPointerDown,false);
-sl.addEventListener('pointerdown', onSliderPointerDown,false);
 function contextmenu( event ) {
 
     event.preventDefault();
@@ -298,36 +288,50 @@ uint hash( uint x ) {
     };
 }
 
-function modifyKnobShader ( material, uniforms,...args ) {
+function modifyBOMBShader( material, uniforms ) {
 
-    if ( material.utils_modified ) return;
-    material.utils_modified = true;
+    if ( material.__ok ) return;
+    material.__ok = true;
+    material.vertexColors=true;
     material.onBeforeCompile = ( shader ) => {
 
-        if ( shader._utils_modified ) return;
-        shader._utils_modified = true;
-
+        if ( shader.__htp_modified ) return;
+        shader.__htp_modified = true;
         Object.assign( shader.uniforms, uniforms );
-
+        const un = {
+            bomb_colors:{ value: [ 1,1,1 , 1,1,0,   1,0,0]}}
+        Object.assign( shader.uniforms, un );
+        console.log(shader.uniforms.time);
         const vertexShader = `
-				attribute int instanceID;
-				/*attribute int flowID;*/
-				attribute int melodyInstrumentID;
-				uniform sampler2D spineTexture;
-				
-				uniform float pathOffset;
-				uniform float pathSegment;
-				uniform float spineOffset;
-				uniform float spineLength;
-				//uniform int melodyInstrumentID[40];
-				uniform float flowData[16];
-				uniform mat4 iMatrix[40];
-				uniform vec3 colors[5];
-				
-				
-				uniform int flow;
-				uniform float time;
-uint hash( uint x ) {
+			
+			attribute uint _tube_id;
+			uniform sampler2D spineTexture;
+			uniform float pathOffset;
+			uniform float pathSegment;
+			uniform float spineOffset;
+			uniform float spineLength;
+			uniform int flow;
+			uniform float time;
+			uniform vec3 colors[4];
+			uniform vec3 bomb_colors[3];
+			//uniform mat4 iMatrix[40];
+			//uniform float flowData[48];
+		${shader.vertexShader}
+		`
+            // chunk import moved in front of modified shader below
+            .replace( '#include <beginnormal_vertex>', '' )
+
+            // vec3 transformedNormal declaration overriden below
+            .replace( '#include <defaultnormal_vertex>', '' )
+
+            // vec3 transformed declaration overriden below
+            .replace( '#include <begin_vertex>', '' )
+
+            // shader override
+            .replace(
+                /void\s*main\s*\(\)\s*\{/,
+                `
+				uint hash( uint x ) {
 					x += ( x << 10u );
 					x ^= ( x >>  6u );
 					x += ( x <<  3u );
@@ -347,8 +351,104 @@ uint hash( uint x ) {
 				}
 				
 				float random( float x ) { return floatConstruct(hash(floatBitsToUint(x))); }
-				
 
+				mat3 getRotX(float angle){
+				
+				  float si = sin(angle);
+				  float co = cos(angle);
+				  return mat3(
+					co, si, 0.0,
+					-si, co, 0.0,
+					0.0, 0.0, 1.0
+				  );
+				 }
+				void main() {
+				#include <beginnormal_vertex>
+				vec3 pos = position.xyz;
+				
+				vec3 n_pos = pos;
+				
+				n_pos.xyz+=objectNormal.xyz*sin(time*10.+pos.z*3.+float(_tube_id)*3.14*0.5)*0.05*float(_tube_id);
+				vec4 worldPos = modelMatrix  * vec4(n_pos, 1.);
+				
+				
+				vec3 transformed = worldPos.xyz;
+
+				vec3 transformedNormal =  objectNormal;
+				
+				transformedNormal = normalMatrix * transformedNormal;
+					
+			` ).replace(
+                '#include <project_vertex>',
+                `vec4 mvPosition = viewMatrix * vec4( transformed, 1.0 );
+				gl_Position = projectionMatrix * mvPosition;`
+            )
+            .replace('#include <color_vertex>',
+                `
+				vColor.xyz = bomb_colors[_tube_id]*0.5;
+				#if defined( USE_MAP )
+                    
+                    r_n=0.;
+                    r_n_1=0.;
+                    
+                    vMapUv.xy*=1.;
+                    
+                    vMapUv.y += time/10.+float(_tube_id)*0.5;
+                    //	if (_tube_id ==uint(0)) vMapUv.xy = vec2(1,1);
+
+				#endif
+	
+	`);
+
+        shader.vertexShader = vertexShader;
+        /*
+        const fragmentShader = `
+
+
+    #define USE_COLOR_ALPHA 1
+    ${shader.fragmentShader}
+    `
+            .replace('#include <color_fragment>',
+                `
+            #if defined( USE_COLOR_ALPHA )
+                diffuseColor *= vColor;
+                //diffuseColor.xyz = vec3(1,1,1);
+                diffuseColor.w = vColor.w;
+            #elif defined( USE_COLOR )
+                diffuseColor.rgb *= vColor;
+            #endif
+
+`);
+        shader.fragmentShader = fragmentShader;*/
+    };
+
+
+}
+function modifyElectricityShader( material, uniforms, numberOfCurves = 1 ) {
+
+    if ( material.__ok ) return;
+    material.__ok = true;
+    material.vertexColors = true;
+    material.onBeforeCompile = ( shader ) => {
+
+        if ( shader.__htp_modified ) return;
+        shader.__htp_modified = true;
+
+        Object.assign( shader.uniforms, uniforms );
+
+        const vertexShader = `
+
+			uniform sampler2D spineTexture;
+			uniform float pathOffset;
+			uniform float pathSegment;
+			uniform float spineOffset;
+			uniform float spineLength;
+			uniform int flow;
+			uniform float time;
+			uniform vec3 colors[4];
+			//uniform mat4 iMatrix[40];
+			//uniform float flowData[48];
+			
 		${shader.vertexShader}
 		`
             // chunk import moved in front of modified shader below
@@ -364,67 +464,85 @@ uint hash( uint x ) {
             .replace(
                 /void\s*main\s*\(\)\s*\{/,
                 `
-				mat3 getRotZ(float angle){
-				 float si = sin(angle);
-					  float co = cos(angle);
-					  return mat3(
-						co, si, 0.0,
-						-si, co, 0.0,
-						0.0, 0.0, 1.0
-					  );
+				uint hash( uint x ) {
+					x += ( x << 10u );
+					x ^= ( x >>  6u );
+					x += ( x <<  3u );
+					x ^= ( x >> 11u );
+					x += ( x << 15u );
+					return x;
 				}
-				void main() {
-					#include <beginnormal_vertex>
-					vec3 pos = position.xyz;
-					
-					mat4 im = iMatrix[instanceID];
-					
-					float r = random(float(instanceID));
-					float angle= 1.;
-					
-					//rotate in at origin, then translate to world 
-					vec4 worldPos = modelMatrix* im * vec4( pos, 1.);
-					
-					//yz - towards center direction
-					//worldPos.yz+=worldPos.yz*sin(time*10.+2.*random(float(instanceID)))*0.05;
-
-					bool bend = flow > 0;
-					float xWeight = bend ? 0. : 1.;
-					
-					vec3 transformed = worldPos.xyz;
-					//transformed = worldPos.xyz;
-					vec3 transformedNormal =  objectNormal;
+				float floatConstruct( uint m ) {
+					const uint ieeeMantissa = 0x007FFFFFu; // binary32 mantissa bitmask
+					const uint ieeeOne      = 0x3F800000u; // 1.0 in IEEE binary32
 				
-					mat3 im_rot = mat3( im );
-					transformedNormal /= vec3( dot( im_rot[ 0 ], im_rot[ 0 ] ), dot( im_rot[ 1 ], im_rot[ 1 ] ), dot( im_rot[ 2 ], im_rot[ 2 ] ) );
-					transformedNormal = im_rot *transformedNormal;
-						
-					transformedNormal = normalMatrix * objectNormal;
+					m &= ieeeMantissa;                     // Keep only mantissa bits (fractional part)
+					m |= ieeeOne;                          // Add fractional part to 1.0
+				
+					float  f = uintBitsToFloat( m );       // Range [1:2]
+					return f - 1.0;                        // Range [0:1]
+				}
+				
+				float random( float x ) { return floatConstruct(hash(floatBitsToUint(x))); }
+				vec2 SpriteSheetAnimationUV(vec2 uv, float size, float speed)
+				{
+					uv /= size;
+					uv.x += floor(mod(time * speed, 1.0) * size) / size;
+					uv.y -= 1./size;
+					uv.y += (1. - floor(mod(time * speed / size, 1.0) * size) / size);
+					return uv;
+				}
+				mat3 getRotX(float angle){
+				
+				  float si = sin(angle);
+				  float co = cos(angle);
+				  return mat3(
+					co, si, 0.0,
+					-si, co, 0.0,
+					0.0, 0.0, 1.0
+				  );
+				 }
+				void main() {
+				#include <beginnormal_vertex>
+				vec3 pos = position.xyz;
+				
+				vec4 worldPos = modelMatrix * vec4(pos, 1.);
+				
+				
+				vec3 transformed = worldPos.xyz;
+
+				vec3 transformedNormal =  objectNormal;
+				
+				transformedNormal = normalMatrix * transformedNormal;
 					
-						` ).replace(
+			` ).replace(
                 '#include <project_vertex>',
                 `vec4 mvPosition = viewMatrix * vec4( transformed, 1.0 );
-							gl_Position = projectionMatrix * mvPosition;`
+				gl_Position = projectionMatrix * mvPosition;`
             )
             .replace('#include <color_vertex>',
                 `
+								
+					vColor.xyz = vec3(2.,1.,0.9);
 				
-				int r_n = melodyInstrumentID;
-				vColor.xyz = colors[r_n];
-				/*
-				if (r_n==4)
-					{
-						vColor.xyz = vec3(0.2);
-						vColor.x = mix(vColor.x,0.45,sin(time*10.+2.*random(float(1)))*0.5+0.5);
-						r_n = 2;
-					}
-					else
-						vColor.xyz = vec3(1);
+					vColor.xyz = vec3(100.);
+				
 				#if defined( USE_MAP )
-				vec2 nUv = vec2(r_n % 2 , ((r_n)/2))*0.5;
-				vMapUv/=2.;
-				vMapUv.xy += nUv;
-				#endif*/
+				
+				float r_n=0.;
+				float r_n_1=0.;
+				float swap = vMapUv.x;
+				vMapUv.x = (vMapUv.y+r_n);
+				vMapUv.y = (swap+r_n_1);
+				
+				vMapUv=SpriteSheetAnimationUV(vMapUv,3.,4.);
+				//vMapUv.xy/=3.;
+				//vMapUv.x+= mod(floor(time/3.),3.);
+				//vMapUv.y+= mod(floor(mod(time,3.)),3.);
+				//vMapUv=fract(vMapUv);
+				//vMapUv.y -= time*2.;
+				#endif
+				//vColor.xyz = vec3(1,1,1);
 	
 	`);
 
@@ -521,110 +639,49 @@ let createKnobMesh = (geometry, matrices)=> {
     }
     mesh.geometry.attributes.instanceID.needsUpdate = true;
     mesh.geometry.attributes.melodyInstrumentID.needsUpdate = true;
-    modifyKnobShader(mesh.material, un);
+        modifyKnobShader(mesh.material, un);
     /*   assignAttribute(mesh.geometry, 'flowID', cellCount*instance_count,1 );
        assignAttribute(mesh.geometry, 'melodyInstrumentID', cellCount*instance_count,1 );
    */
     return mesh;
 };
 export function initUI(ui_pre_scene,ecs_world) {
+    console.log("INI UI")
     world = ecs_world;
     uniforms.melodyInstrumentID= {value:ecs_world.AudioSystem.melodyInstrumentID};
     uniforms.time = {value: 0};
-    let body_matrices = [];
-    let to_parent ;
-    let TO_matrices=[];
-    let to_body_sheet;
-    let knob_matrices = [];
-    let mixer_matrix;
     
+    let hand;
+    
+    let bomb;
     let material = new MeshBasicMaterial( { color: 0x00ff00 } );
     ui_pre_scene.traverse(function (child)
     {
         if (child.name.includes("TO_SELF"))
             to_body= child;
-        else if (child.name.includes("TO1"))
-            knob_meshes.push(child);
-        //pick parent, move it, loops through child and select matrices
-        if (child.name.includes("Node")){
-            to_parent = child;
-        }
-        if (child.parent !== null && child.parent.name.includes("sheet_positions"))
-            
-        if (child.name.includes("TO_")){
-            
-            if (child.name.includes("TO_position1"))
-                to_body_sheet = child;
-            //child.rotateZ(3.14);
-            child.updateMatrixWorld();
-            TO_matrices.push(child.matrixWorld.clone());
-        }
-        if (child.name.includes("knob_")){
-            child.updateMatrixWorld();
-            knob_matrices.push(child.matrixWorld);
-        }
-        
-        if (child.name.includes("mixer")){
-            child.updateMatrixWorld();
-            
-            mixer_matrix = child;
-            mixer_matrix.userData.skipInteraction = true;
-            //mixer_matrix.rotateX();
-            //mixer_matrix.rotateX(3.14);
-            //mixer_matrix.rotateZ(3.14);
-        }
-        
-        if (child.name.includes("bezier")){
-            child.updateMatrixWorld();
-            wires.push(child);
-        }
+        else if (child.name.includes("ELECTRICITY"))
+            electricity=(child);        
+        else if (child.name.includes("BOMB"))
+            bomb=(child);        
+        else if (child.name.includes("HAND"))
+            hand= (child);
     });
     
-    to_parent.children.forEach((child)=>{
-        child.updateMatrixWorld();
-
-        child.matrixWorld.elements[14] = +child.name.slice(-(child.name.length - 3));
-        body_matrices.push(child.matrixWorld);
-
-        child.material = new MeshPhongMaterial({color: 0xffffff});
-
-    });
-    body_matrices.sort((a,b)=> {
-        if (a.elements[14]>b.elements[14]) return 1;
-        else if( a.elements[14]<b.elements[14]) return -1;
-        else if (a.elements[14]===b.elements[14]) return 0;
-    })
-    
-    body_matrices.forEach((m)=>{
-        m.elements[14]=0});
-
-    /*wires.sort((a,b)=> {
-        
-        if (a.elements[14]>b.elements[14]) return 1;
-        else if( a.elements[14]<b.elements[14]) return -1;
-        else if (a.elements[14]===b.elements[14]) return 0;
-    })*/
-
     to_body.material = to_body.material.clone();
     to_body.material.emissivemap = undefined;
     to_body.material.emissiveColor = {r:0,g:0,b:0};
     to_body.material.emissiveIntensity = 0.0;
     to_body.material.vertexColors = true;
     to_body.geometry.computeBoundingBox() ;
+
     var geo = new PlaneGeometry(camera_size*2, camera_size*2, 2, 2);
-    const print = knob_meshes[0].material.map.clone();
-
-    print.wrapS = RepeatWrapping;
-    print.wrapT = RepeatWrapping;
-    print.repeat = new Vector2(3.5,3.5);
-
     const c_offset=4    ;
-    var mat = new MeshBasicMaterial({ color: new Color(colors[c_offset*3+0],colors[c_offset*3+1],colors[c_offset*3+2]).multiply(new Color(0.5,0.5,.5)),map:print });
+    var mat = new MeshBasicMaterial({ color: new Color(colors[c_offset*3+0],colors[c_offset*3+1],colors[c_offset*3+2]).multiply(new Color(0.5,0.5,.5)) });
     
     var plane = new Mesh(geo, mat);
     plane.userData.skipInteraction=true;
     plane.position.z=-1    ;
-
+    
     scene.add(plane);
     
     scene.add(new AmbientLight(0xffffff,0.5));
@@ -637,8 +694,37 @@ export function initUI(ui_pre_scene,ecs_world) {
     dir_light.shadow.camera.far = 1000; // default
     dir_light.shadow.camera.position.copy(camera.position);
     dir_light.position.set(50,50,50);
-    scene.add(dir_light);
-        
+    scene.add(dir_light);    
+    
+    //scene.add(electricity);
+    
+    modifyBOMBShader(bomb.material,uniforms);
+    bomb.scale.set(2,2,2);
+    bomb.position.set(-camera_size*canvas_aspect/2+0.75,camera_size/2-0.5,0);
+    scene.add(bomb);
+    electricity.material.roughness = 1;
+    
+    modifyElectricityShader(electricity.material,uniforms);-
+    electricity.scale.set(2,2,2);
+    //electricity.rotateZ(3.14/2);
+    //electricity.rotateY(3.14/2);
+    electricity.position.set(-camera_size*canvas_aspect/2+0.75,camera_size/2-3.,0);
+    scene.add(electricity);
+    
+    console.log(hand);
+    //hand.getObjectByName("lowerarm_l").scale.set(100,100,100);
+    hand.children[0].isSkinnedMesh=false;
+    hand.scale.set(0.13,0.13,0.13);
+    hand.position.y+=0.5;
+    hand.rotateX(3.14/2);
+    hand.rotateZ(3.14);
+    hand.rotateY(3.14);
+    //hand.position.set(0,0,0);
+    //hand.detach();
+    scene.add(hand);
+    
+    //scene.add(hand);
+/*
     const tri_instanced_mesh = createInstancedMeshFrom(to_body, body_matrices,0);
     tri_instanced_mesh.position.set(-camera_size*canvas_aspect/2+0.75,camera_size/2+0.35);
     tri_instanced_mesh.setRotationFromAxisAngle(new Vector3(0,0,1),-3.14/2.)
@@ -646,8 +732,10 @@ export function initUI(ui_pre_scene,ecs_world) {
     tri_instanced_mesh.userData.cachedXPos = tri_instanced_mesh.position.x;
     tri_instance_meshes.push(tri_instanced_mesh);
     scene.add(tri_instanced_mesh );
+*/
 
     
+/*
     for (let i=1; i<ecs_world.GlobalParameters.barSize;i++ ){
         
         const tri_ins_mesh = createInstancedMeshFrom(to_body, body_matrices,i);
@@ -665,7 +753,9 @@ export function initUI(ui_pre_scene,ecs_world) {
             tri_ins_mesh.geometry.attributes.melodyInstrumentID.array[j]= uniforms.melodyInstrumentID.value[i*40+j];
         }
     }
+*/
     
+/*
 
     let max_tri_ident_x = -camera_size*canvas_aspect/2+0.75+ecs_world.GlobalParameters.barSize-1;
     max_tri_ident_x = 2.;
@@ -681,16 +771,16 @@ export function initUI(ui_pre_scene,ecs_world) {
     const instruments_container = new Object3D();
     to_body_sheet.material=to_body.material.clone();
     const tri_variants = createVariantMeshFrom(to_body_sheet, TO_matrices);
-  /*  const tri_variants = new InstancedMesh(to_body_sheet, to_body_sheet.material,4);
+  /!*  const tri_variants = new InstancedMesh(to_body_sheet, to_body_sheet.material,4);
     tri_variants.setMatrixAt(0,TO_matrices[0]);
     tri_variants.setMatrixAt(1,TO_matrices[1]);
     tri_variants.setMatrixAt(2,TO_matrices[2]);
-    tri_variants.setMatrixAt(3,TO_matrices[3]);*/
+    tri_variants.setMatrixAt(3,TO_matrices[3]);*!/
     tri_variants.receiveShadow = true;
     //tri_variants.customDepthMaterial = new MeshDepthMaterial();
- /*   tri_variants.customDepthMaterial.onBeforeCompile = (shader)=>{
+ /!*   tri_variants.customDepthMaterial.onBeforeCompile = (shader)=>{
         
-    };*/
+    };*!/
     tri_variants.name = to_body.name;
     tri_variants.userData.beat = -1;
     instruments_container.add(tri_variants);
@@ -758,26 +848,17 @@ export function initUI(ui_pre_scene,ecs_world) {
     //instruments_container.position.x+=-camera_size*canvas_aspect/2+ss/1.4;
     instruments_container.position.x+=-camera_size*canvas_aspect/2-bbc.x+bbs.x/2;
     scene.add(instruments_container);
-    mixer_matrix.receiveShadow=true;
-  /*  for(let i=0;i<knobs.length;i++)
-    {
-        knobs[i].scale.set(k_scale, k_scale, k_scale);
-        knobs[i].rotateX(3.14 / 2);
-        knobs[i].material.color = new Color(colors[i*3+offset], colors[i*3+1+offset], colors[i*3+2+offset]);
-        knobs[i].position.x = max_tri_ident-camera_size*canvas_aspect/2+ 0.2 * k_scale+i*0.15*k_scale;
-        knobs[i].position.y = -camera_size/2+1.5;
-        knobs[i].userData.knob = i+1;
-        knobs[i].userData.color = i+offset;
-        
-        scene.add(knobs[i]);
-    }*/
-    //scene.add(knob_variants1);
-    //scene.add(knob_variants2);
+*/
+    
     renderer.render(scene,camera);
 }
 export function renderUI(){
-    if (!ui_visible || sheet_song_list.style.display!== "none") return;
+    //if (!ui_visible || sheet_song_list.style.display!== "none") return;
+    uniforms.time.value+=0.02;
     
+    electricity.rotateY(0.02);
+    renderer.render(scene,camera);
+    /*
     uiInputSystem.update();
     //scene.getObjectByName("DIRLIGHT").rotation.set(,0,0);
     if (pointer.x !== -2) {
@@ -891,7 +972,7 @@ export function renderUI(){
             console.log("there is no instance with given id");
         //setting effect on empty tri
         let id_val = interactionable.object.geometry.attributes.melodyInstrumentID.array[instance];
-/*        if (selected_id <0 )
+/!*        if (selected_id <0 )
         {
             pointer.x = pointer.y = -2;
             console.log(id_val)
@@ -906,7 +987,7 @@ export function renderUI(){
             world.AudioSystem.playInstrumentAt(note);
             world.Curve.geometryNeedsUpdate = true;
             return;
-        }*/
+        }*!/
         id_val = id_val === selected_instrument ? 4 : selected_instrument;
         interactionable.object.geometry.attributes.melodyInstrumentID.array[instance] = id_val;
         uniforms.melodyInstrumentID.value[beat*40+instance] = id_val;
@@ -925,7 +1006,7 @@ export function renderUI(){
         interactionable.object.geometry.attributes.melodyInstrumentID.needsUpdate = true;
         pointer.x = pointer.y = -2;
     }
-    
+    */
 }
 function reset_knob_count(){
     knob_effect_meshes.forEach((e)=>e.forEach((e)=>e.count=0));
@@ -968,7 +1049,7 @@ function placeElement(element,beat,id)
     // world.geometry.mixer.updateGeometryAt(beat);
 
 }
-export function showSheetCanvas(flag){
+/*export function showSheetCanvas(flag){
 
     ui_visible = flag;
     if (flag) {
@@ -985,7 +1066,7 @@ export function showSheetCanvas(flag){
         sheet_tooltips.style.display = "none";
         scale_div.style.display = "none";
     }
-}
+}*/
 function toFixed(x) {
     if (Math.abs(x) < 1.0) {
         var e = parseInt(x.toString().split('e-')[1]);
