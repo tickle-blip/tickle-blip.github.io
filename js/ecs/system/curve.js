@@ -295,7 +295,7 @@ export class CurvedWorld {
         this.ccc= ccc;
         const prev_index = this.updateCurve(uuu,ccc);
         if (prev_index >=0){
-            console.log("placingInteractive "+ prev_index);
+//            console.log("placingInteractive "+ prev_index);
             this.placeInteractive(world,prev_index);
         }
         const curveFR = this.#flow.frenetFrames[ccc];

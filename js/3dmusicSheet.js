@@ -1106,7 +1106,7 @@ export function parseMelodyJSON(json,edit_mode=false){
             
             if (song_data.scale !== undefined)
                 (document.getElementById('scaleSelect').value = song_data.scale);
-            console.log(song_data.tonicOctave)
+//            console.log(song_data.tonicOctave)
             if (song_data.tonicOctave !== undefined) {
                 (document.getElementById('tonicSelect').value = song_data.tonicOctave.tonic);
                 (document.getElementById('octaveSelect').value = song_data.tonicOctave.octave)

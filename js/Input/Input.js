@@ -11,5 +11,8 @@ export let Input = {
     pointerY:0.5,
     startX: 0.5,
     startY:0.5,
-    mouseMove: false
+    mouseMove: false,
+    accX: 0,
+    accY: 0,
+    accZ: 0
 };

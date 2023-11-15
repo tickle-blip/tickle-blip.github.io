@@ -29,7 +29,6 @@ export const interactionSystem = (world) => {
             default:
                 break;
             case "TO_SELF":
-                console.log("TO_SELF");
                 world.AudioSystem.addInstrumentOnRandomAvailablePosition(variation);
                 world.progressMustUpdate=true;
                 world.Curve.geometryNeedsUpdate = true;

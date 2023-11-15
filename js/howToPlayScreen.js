@@ -32,10 +32,11 @@ const second_row = [18,17,16,13,12,11,10,8,7,6,5,3,4,2,9,14,15,1,0,19];
 const colors= [ 0.05,0.2,0.6, 0.1,0.6,0.3, 0.5,0.5,0.65, 0.7,0.1,0.1, 0.05,0.05,0.05];
 let json_d;
 const scene = new Scene();
-scene.background = new Color(0x333333);
+//scene.background = new Color(0,0,0,0);
+//scene.alpha = true;
 //scene.back
 
-const camera_size = 10;
+const camera_size = 2;
 [canvas.width,canvas.height] = [window.innerWidth,window.innerHeight];
 let camera,canvas_aspect;
 let rotationActive;
@@ -48,7 +49,8 @@ let rotationActive;
     if (canvas_aspect>1)
         canvas_aspect =8/10;
     canvas.width=canvas.height*canvas_aspect;
-
+    msc.style.width=`${canvas.width}px`;
+    msc.style.height=`${canvas.height}px`;
     camera = new OrthographicCamera(canvas_aspect*camera_size/-2,canvas_aspect*camera_size/2,camera_size/2,camera_size/-2,1,1000);
 
     //camera.position.y=-0.1;
@@ -65,12 +67,17 @@ document.getElementById('sheetMenu').style.width=`${canvas.width}px`;
 //create Renderer
 let renderer = new WebGLRenderer( {canvas:canvas, antialias: true, alpha:true } );
 
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = PCFSoftShadowMap; // default THREE.PCFShadowMap
+renderer.setClearColor( 0x000000, 0 ); // the default
+//renderer.shadowMap.enabled = true;
+//renderer.shadowMap.type = PCFSoftShadowMap; // default THREE.PCFShadowMap
 
 
 let to_body;
 let electricity;
+let hand;
+let hand_container;
+let bomb;
+
 const uniforms = {};
 const raycaster = new Raycaster();
 const pointer = new Vector2();
@@ -150,7 +157,6 @@ function onSliderPointerDown( event ) {
     const slp_rect = slp.getBoundingClientRect();
     let slp_pos = ((slp_rect.right-slp_rect.left)/2);
     slp_pos = slp_pos/sl.clientWidth;
-    console.log(slp_pos)
 
     slider_pointer.x = slider_pointer.x/sl.clientWidth;
     let difX = slider_pointer.x-slp_pos;
@@ -162,7 +168,6 @@ function onSliderPointerDown( event ) {
     }
     slp.style.transform = `translateX(${difX*100/(1-slider_ratio)}%)`;
     
-    console.log(slider_pointer)
 }
 function onSliderPointerUp( event ) {
     sl.releasePointerCapture( event.pointerId );
@@ -175,7 +180,6 @@ function onSliderPointerMove( event ) {
     const slp_rect = slp.getBoundingClientRect();
     let slp_pos = ((slp_rect.right-slp_rect.left)/2);
     slp_pos = slp_pos/sl.clientWidth;
-    console.log(slp_pos)
     
     slider_pointer.x = slider_pointer.x/sl.clientWidth;
     let difX = slider_pointer.x-slp_pos;
@@ -199,8 +203,8 @@ function modifyShader ( material, uniforms,...args ) {
 
     if ( material.utils_modified ) return;
     material.utils_modified = true;
-    material.onBeforeCompile = ( shader ) => {
 
+    material.onBeforeCompile = ( shader ) => {
         if ( shader._utils_modified ) return;
         shader._utils_modified = true;
 
@@ -256,7 +260,7 @@ uint hash( uint x ) {
 					vec3 transformed = vec3( position );
 					float a = time*2.-1.;
 					if (picked==instanceID) 
-					    transformed*=0.2*a*a+0.8;
+					    transformed+=transformed*sin(time*6.*3.14)*0.1;
                     #ifdef USE_ALPHAHASH
                         vPosition = vec3( position );
                     #endif
@@ -287,7 +291,33 @@ uint hash( uint x ) {
 
     };
 }
-
+let createVariantMeshFrom = (geometry, matrices)=> {
+    const mesh = new InstancedMesh(
+        geometry.geometry.clone(),
+        geometry.material.clone(),
+        matrices.length //because we store matrices as uniforms.
+    );
+    mesh.name = geometry.name;
+    mesh.material.vertexColors = true;
+    //mesh.frustumCulled = false;
+    assignAttribute(mesh.geometry, 'instanceID', matrices.length,1 );
+    assignAttribute(mesh.geometry, 'melodyInstrumentID', matrices.length,1 );
+    for (let i = 0; i < matrices.length; i++) {
+        //offset id by -40 to not overlap with melody ids when using pick effect
+        mesh.geometry.attributes.instanceID.array[i] = i;
+        mesh.setMatrixAt(i,matrices[i]);
+        //fill first beat melody ids;
+        mesh.geometry.attributes.melodyInstrumentID.array[i]= (i+4)%4;
+    }
+    mesh.instanceMatrix.needsUpdate=true;
+    mesh.geometry.attributes.instanceID.needsUpdate = true;
+    mesh.geometry.attributes.melodyInstrumentID.needsUpdate = true;
+    modifyShader(mesh.material,uniforms);
+    /*   assignAttribute(mesh.geometry, 'flowID', cellCount*instance_count,1 );
+       assignAttribute(mesh.geometry, 'melodyInstrumentID', cellCount*instance_count,1 );
+   */
+    return mesh;
+};
 function modifyBOMBShader( material, uniforms ) {
 
     if ( material.__ok ) return;
@@ -301,7 +331,6 @@ function modifyBOMBShader( material, uniforms ) {
         const un = {
             bomb_colors:{ value: [ 1,1,1 , 1,1,0,   1,0,0]}}
         Object.assign( shader.uniforms, un );
-        console.log(shader.uniforms.time);
         const vertexShader = `
 			
 			attribute uint _tube_id;
@@ -547,7 +576,16 @@ function modifyElectricityShader( material, uniforms, numberOfCurves = 1 ) {
 	`);
 
         shader.vertexShader = vertexShader;
-
+        const fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>",
+            `
+            	#ifdef OPAQUE
+	diffuseColor.a = 1.0;
+	#endif
+	#ifdef USE_TRANSMISSION
+	diffuseColor.a *= material.transmissionAlpha;
+	#endif
+	gl_FragColor = vec4( outgoingLight, diffuseColor.r);`);
+        shader.fragmentShader=fragmentShader;
     };
 }
 function assignAttribute(mesh, name, count,stride){
@@ -555,105 +593,13 @@ function assignAttribute(mesh, name, count,stride){
     mesh.attributes[name.toString()].setUsage(DynamicDrawUsage);
     mesh.attributes[name.toString()].needsUpdate = true;
 }
-let createInstancedMeshFrom = (geometry, matrices,beat)=> {
-    const mesh = new InstancedMesh(
-        geometry.geometry.clone(),
-        geometry.material.clone(),
-        matrices.length //because we store matrices as uniforms.
-    );
-    mesh.name = geometry.name;
-    mesh.material.vertexColors = true;
-    mesh.frustumCulled = false;
-    //mesh.count =40;
-    assignAttribute(mesh.geometry, 'instanceID', 40,1 );
-    assignAttribute(mesh.geometry, 'melodyInstrumentID', 40,1 );
-
-    for (let i = 0; i < matrices.length; i++) {
-        mesh.geometry.attributes.instanceID.array[i] = i+beat*40;
-        mesh.setMatrixAt(i,matrices[i]);
-        //fill first beat melody ids;
-        mesh.geometry.attributes.melodyInstrumentID.array[i]= uniforms.melodyInstrumentID.value[i];
-    }
-    mesh.geometry.attributes.instanceID.needsUpdate = true;
-    mesh.geometry.attributes.melodyInstrumentID.needsUpdate = true;
-    
-    uniforms.picked = {value:-1};
-
-    //const un= {picked:mesh.userData.picked.value};
-
-    //Object.assign( un, uniforms );
-    modifyShader(mesh.material,uniforms);
-    /*   assignAttribute(mesh.geometry, 'flowID', cellCount*instance_count,1 );
-       assignAttribute(mesh.geometry, 'melodyInstrumentID', cellCount*instance_count,1 );
-   */
-    return mesh;
-};
-let createVariantMeshFrom = (geometry, matrices)=> {
-    const mesh = new InstancedMesh(
-        geometry.geometry.clone(),
-        geometry.material.clone(),
-        matrices.length //because we store matrices as uniforms.
-    );
-    mesh.name = geometry.name;
-    mesh.material.vertexColors = true;
-    //mesh.frustumCulled = false;
-    assignAttribute(mesh.geometry, 'instanceID', matrices.length,1 );
-    assignAttribute(mesh.geometry, 'melodyInstrumentID', matrices.length,1 );
-    for (let i = 0; i < matrices.length; i++) {
-        //offset id by -40 to not overlap with melody ids when using pick effect
-        mesh.geometry.attributes.instanceID.array[i] = i-40;
-        mesh.setMatrixAt(i,matrices[i]);
-        //fill first beat melody ids;
-        mesh.geometry.attributes.melodyInstrumentID.array[i]= (i+4)%4;
-    }
-    mesh.instanceMatrix.needsUpdate=true;
-    mesh.geometry.attributes.instanceID.needsUpdate = true;
-    mesh.geometry.attributes.melodyInstrumentID.needsUpdate = true;
-    modifyShader(mesh.material,uniforms);
-    /*   assignAttribute(mesh.geometry, 'flowID', cellCount*instance_count,1 );
-       assignAttribute(mesh.geometry, 'melodyInstrumentID', cellCount*instance_count,1 );
-   */
-    return mesh;
-};
-let createKnobMesh = (geometry, matrices)=> {
-    const mesh = new InstancedMesh(
-        geometry.geometry.clone(),
-        geometry.material.clone(),
-        0 //because we store matrices as uniforms.
-    );
-    mesh.name = geometry.name;
-    mesh.material.vertexColors = true;
-    mesh.frustumCulled = false;
-    
-    ///at start
-    mesh.count =0;
-    assignAttribute(mesh.geometry, 'instanceID', matrices.length,1 );
-    assignAttribute(mesh.geometry, 'melodyInstrumentID', matrices.length,1 );
-    const un = {iMatrix : {value: new Array(matrices.length * 16).fill(0)},colors:{ value: [ 0.05,0.2,0.6, 0.1,0.6,0.3, 0.3,0.3,0.45, 0.7,0.1,0.1, 0.05,0.05,0.05]}};
-    for (let i = 0; i < matrices.length; i++) {
-        matrices[i].toArray(un.iMatrix.value,i*16);
-        mesh.geometry.attributes.instanceID.array[i] = i;
-       // mesh.setMatrixAt(i,matrices[i]);
-        //fill first beat melody ids;
-        mesh.geometry.attributes.melodyInstrumentID.array[i]= (i+4)%4;
-    }
-    mesh.geometry.attributes.instanceID.needsUpdate = true;
-    mesh.geometry.attributes.melodyInstrumentID.needsUpdate = true;
-        modifyKnobShader(mesh.material, un);
-    /*   assignAttribute(mesh.geometry, 'flowID', cellCount*instance_count,1 );
-       assignAttribute(mesh.geometry, 'melodyInstrumentID', cellCount*instance_count,1 );
-   */
-    return mesh;
-};
 export function initUI(ui_pre_scene,ecs_world) {
-    console.log("INI UI")
     world = ecs_world;
     uniforms.melodyInstrumentID= {value:ecs_world.AudioSystem.melodyInstrumentID};
-    uniforms.time = {value: 0};
+    uniforms.time = {value: 1};
+
+    uniforms.picked = {value:-1};
     
-    let hand;
-    
-    let bomb;
     let material = new MeshBasicMaterial( { color: 0x00ff00 } );
     ui_pre_scene.traverse(function (child)
     {
@@ -663,8 +609,8 @@ export function initUI(ui_pre_scene,ecs_world) {
             electricity=(child);        
         else if (child.name.includes("BOMB"))
             bomb=(child);        
-        else if (child.name.includes("HAND"))
-            hand= (child);
+        //else if (child.name.includes("HAND"))
+          //  hand= (child);
     });
     
     to_body.material = to_body.material.clone();
@@ -673,7 +619,18 @@ export function initUI(ui_pre_scene,ecs_world) {
     to_body.material.emissiveIntensity = 0.0;
     to_body.material.vertexColors = true;
     to_body.geometry.computeBoundingBox() ;
+    let scale = 0.36;
+    const tri_variant_matrices = new Array(4).fill(0).map((e,i)=> {
+        const m  =new Matrix4();
+        //m.compose(new Vector3((max_tri_ident_x+0.35*scale),camera_size/2-0.25*scale-i*0.25*scale,0),new Quaternion().setFromAxisAngle(new Vector3(0,0,1),3.14/2+i*3.14),new Vector3(scale,scale,scale));
+        m.compose(new Vector3(-camera_size*canvas_aspect/2+camera_size*canvas_aspect*0.25+i/6*camera_size*canvas_aspect,0 ,0),new Quaternion().setFromAxisAngle(new Vector3(0,0,1),i*3.14),new Vector3(scale,scale,scale));
+        return m;
 
+    })
+    const tri_variants = createVariantMeshFrom(to_body,tri_variant_matrices);
+    tri_variants.rotateX(0);
+    tri_variants.position.y=-camera_size/3.5;
+    scene.add(tri_variants);
     var geo = new PlaneGeometry(camera_size*2, camera_size*2, 2, 2);
     const c_offset=4    ;
     var mat = new MeshBasicMaterial({ color: new Color(colors[c_offset*3+0],colors[c_offset*3+1],colors[c_offset*3+2]).multiply(new Color(0.5,0.5,.5)) });
@@ -682,7 +639,7 @@ export function initUI(ui_pre_scene,ecs_world) {
     plane.userData.skipInteraction=true;
     plane.position.z=-1    ;
     
-    scene.add(plane);
+    //scene.add(plane);
     
     scene.add(new AmbientLight(0xffffff,0.5));
     const dir_light = new DirectionalLight(0xffffff, 2);
@@ -697,548 +654,243 @@ export function initUI(ui_pre_scene,ecs_world) {
     scene.add(dir_light);    
     
     //scene.add(electricity);
-    
+    const prev_b_mat = bomb.material;
+    //bomb.material = new MeshBasicMaterial();
+    //MeshBasicMaterial.prototype.copy.call( bomb.material, prev_b_mat );
     modifyBOMBShader(bomb.material,uniforms);
-    bomb.scale.set(2,2,2);
-    bomb.position.set(-camera_size*canvas_aspect/2+0.75,camera_size/2-0.5,0);
+    bomb.scale.set(0.35,0.35,0.35);
+    bomb.position.set(0,camera_size/2-0.65,0);
     scene.add(bomb);
-    electricity.material.roughness = 1;
+    const prev_el_mat = electricity.material; 
+    //electricity.material = new MeshBasicMaterial();
+    //MeshBasicMaterial.prototype.copy.call( electricity.material, prev_el_mat );
+    //electricity.material.roughness = 1;
     
-    modifyElectricityShader(electricity.material,uniforms);-
-    electricity.scale.set(2,2,2);
+    modifyElectricityShader(electricity.material,uniforms);
+    electricity.scale.set(0.35,0.35,0.35);
     //electricity.rotateZ(3.14/2);
     //electricity.rotateY(3.14/2);
-    electricity.position.set(-camera_size*canvas_aspect/2+0.75,camera_size/2-3.,0);
+    //electricity.rotateX(3.14/2);
+    electricity.position.set(0,camera_size/2-0.65,0);
     scene.add(electricity);
     
-    console.log(hand);
     //hand.getObjectByName("lowerarm_l").scale.set(100,100,100);
-    hand.children[0].isSkinnedMesh=false;
-    hand.scale.set(0.13,0.13,0.13);
-    hand.position.y+=0.5;
-    hand.rotateX(3.14/2);
-    hand.rotateZ(3.14);
-    hand.rotateY(3.14);
+    hand_container = new Object3D();
+    hand_container.add(world.hand);
+
+    //world.hand.position.set(0,0,0)
+    //hand_container.scale.set(5,5,5);
+    //world.hand.scale.set(1,1,1);
+    hand_container.name = "HAND_CONTAINER";
+    hand_container.position.set(-camera_size*canvas_aspect/2,camera_size/2-0.65,2);
+    //hand.position.x+=4;
+    hand_container.rotateX(-3.14);
+    //hand_container.rotateZ(-3.14/2);
+    hand_container.rotateY(-3.14/2);
+    //world.hand.children[0].isSkinnedMesh=false;
+
+    //hand.position.y+=4;
+
     //hand.position.set(0,0,0);
     //hand.detach();
-    scene.add(hand);
-    
-    //scene.add(hand);
-/*
-    const tri_instanced_mesh = createInstancedMeshFrom(to_body, body_matrices,0);
-    tri_instanced_mesh.position.set(-camera_size*canvas_aspect/2+0.75,camera_size/2+0.35);
-    tri_instanced_mesh.setRotationFromAxisAngle(new Vector3(0,0,1),-3.14/2.)
-    tri_instanced_mesh.userData.beat = 0;
-    tri_instanced_mesh.userData.cachedXPos = tri_instanced_mesh.position.x;
-    tri_instance_meshes.push(tri_instanced_mesh);
-    scene.add(tri_instanced_mesh );
-*/
-
-    
-/*
-    for (let i=1; i<ecs_world.GlobalParameters.barSize;i++ ){
-        
-        const tri_ins_mesh = createInstancedMeshFrom(to_body, body_matrices,i);
-        tri_ins_mesh.position.set(-camera_size*canvas_aspect/2+0.75+i,camera_size/2+0.35,0);
-        tri_ins_mesh.setRotationFromAxisAngle(new Vector3(0,0,1),-3.14/2.)
-        tri_ins_mesh.userData.beat = i;
-        tri_ins_mesh.geometry.attributes.melodyInstrumentID.needsUpdate = true;
-        tri_ins_mesh.userData.cachedXPos = tri_ins_mesh.position.x;
-        tri_instance_meshes.push(tri_ins_mesh);
-        scene.add(tri_ins_mesh );
-        
-        for (let j = 0; j < 40; j++) {
-            //fill rest beat melody ids;
-            //iim.geometry.attributes.melodyInstrumentID=iim.geometry.attributes.melodyInstrumentID.clone();
-            tri_ins_mesh.geometry.attributes.melodyInstrumentID.array[j]= uniforms.melodyInstrumentID.value[i*40+j];
-        }
-    }
-*/
-    
-/*
-
-    let max_tri_ident_x = -camera_size*canvas_aspect/2+0.75+ecs_world.GlobalParameters.barSize-1;
-    max_tri_ident_x = 2.;
-    let scale = 2.5;
-    const tri_variant_matrices = new Array(4).fill(0).map((e,i)=> {
-        const m  =new Matrix4();
-        //m.compose(new Vector3((max_tri_ident_x+0.35*scale),camera_size/2-0.25*scale-i*0.25*scale,0),new Quaternion().setFromAxisAngle(new Vector3(0,0,1),3.14/2+i*3.14),new Vector3(scale,scale,scale));
-        m.compose(new Vector3(-camera_size*canvas_aspect/2+0.25*scale+i*0.27*scale,-camera_size/2+1.5 ,0),new Quaternion().setFromAxisAngle(new Vector3(0,0,1),i*3.14),new Vector3(scale,scale,scale));
-        return m;
-        
-    })
-    const max_tri_ident = max_tri_ident_x+0.25*scale;
-    const instruments_container = new Object3D();
-    to_body_sheet.material=to_body.material.clone();
-    const tri_variants = createVariantMeshFrom(to_body_sheet, TO_matrices);
-  /!*  const tri_variants = new InstancedMesh(to_body_sheet, to_body_sheet.material,4);
-    tri_variants.setMatrixAt(0,TO_matrices[0]);
-    tri_variants.setMatrixAt(1,TO_matrices[1]);
-    tri_variants.setMatrixAt(2,TO_matrices[2]);
-    tri_variants.setMatrixAt(3,TO_matrices[3]);*!/
-    tri_variants.receiveShadow = true;
-    //tri_variants.customDepthMaterial = new MeshDepthMaterial();
- /!*   tri_variants.customDepthMaterial.onBeforeCompile = (shader)=>{
-        
-    };*!/
-    tri_variants.name = to_body.name;
-    tri_variants.userData.beat = -1;
-    instruments_container.add(tri_variants);
-
-    mixer_matrix.castShadow = false;
-    instruments_container.add(mixer_matrix)
-    const w0 = wires[0];
-    wires[0]=wires[1];
-    wires[1]=w0;
-    for(let i=0;i<wires.length;i++){
-        wires[i].visible = false;
-        wires[i].userData.skipInteraction= true;
-        wires[i].castShadow = true;
-        instruments_container.add(wires[i])
-    }
-    const offset = 3;
-    const k_scale = 5;
-    
-    
-    for(let i=0;i<knob_matrices.length;i++){
-        const v = new Vector3().setFromMatrixPosition(knob_matrices[knob_matrices.length-i-1]);
-        const knob_index = Math.floor(Math.random()*(knob_meshes.length-1))+1;
-        const k= knob_meshes[knob_index].clone();
-        k.material = knob_meshes[knob_index].material.clone();
-        k.rotateX(3.14 / 2);
-        k.position.copy(v);
-        k.material.color = new Color(colors[(i*3+offset)%(colors.length-3)], colors[(i*3+1+offset)%(colors.length-3)], colors[(i*3+2+offset)%(colors.length-3)]);
-        k.userData.knob = i+1;
-        k.userData.color = i+offset;
-        k.castShadow = true;
-        k.recieveShadow=false;
-        const s = 0.8;
-        k.scale.set(s,s,s);
-        k.updateMatrixWorld();
-        //k.visible = false;
-        mixer_knobs.push(k);
-        instruments_container.add(k);
-    }
-    instruments_container.castShadow=true;
-    instruments_container.receiveShadow=true;
-    const ss = camera_size*canvas_aspect/1.85;
-    
-    instruments_container.scale.set(ss,ss,ss);
-    //
-    let containerBBxes =[];
-    let containerBB = new Box3();
-    instruments_container.traverse((e)=>
-    {
-        if (e.geometry) {
-            const box = new Box3();
-            e.geometry.computeBoundingBox()
-            box.copy( e.geometry.boundingBox ).applyMatrix4( e.matrixWorld );
-            containerBBxes.push(box);
-        }
-    });
-    containerBB.setFromObject(instruments_container);
-    const bbs = new Vector3();
-    const bbc = new Vector3();
-    const cP = new Vector3();
-    containerBB.getSize(bbs)
-    containerBB.getCenter(bbc)
-    //const helper = new Box3Helper( containerBB, 0xffff00 );
-    //instruments_container.add( helper );
-    instruments_container.position.y=-camera_size/2-bbc.y+bbs.y/2+ss/8;
-    //instruments_container.position.x+=-camera_size*canvas_aspect/2+ss/1.4;
-    instruments_container.position.x+=-camera_size*canvas_aspect/2-bbc.x+bbs.x/2;
-    scene.add(instruments_container);
-*/
-    
+    scene.add(hand_container);
+    showHowToPlayScreen(false);
     renderer.render(scene,camera);
 }
-export function renderUI(){
-    //if (!ui_visible || sheet_song_list.style.display!== "none") return;
-    uniforms.time.value+=0.02;
-    
-    electricity.rotateY(0.02);
-    renderer.render(scene,camera);
-    /*
-    uiInputSystem.update();
-    //scene.getObjectByName("DIRLIGHT").rotation.set(,0,0);
-    if (pointer.x !== -2) {
-        //console.log("IN script pointer: " + pointer.x + ", " + pointer.y);
-        //console.log("IN INPUT pointer: " + is.current_input.pointerX + ", " + is.current_input.pointerY);
+let fly_timer=0;
+let timer = -1;
+
+const falling_fingers=[];
+const q = new Quaternion;
+const v = new Vector3;
+const c = new Color;
+const c1 = new Color;
+let remFingerFlag = false;
+let TriinstanceSin = 1;
+let enemy_flag = false;
+const removeFingerSystem = (world) => {
+    if (timer<0 && world.hand.userData.removeFinger === true && world.fingersAlive > 0) {
+        world.hand.userData.removeFinger= false;
+
+        world.AudioSystem.playEmptyInstrument();
+
+        world.hand.children[0].material.color.set(1,0,0);
+        timer =0;
+        const f_bone = world.hand.userData.fingers_bones[world.fingersAlive-1];
+        f_bone.scale.set(0, 0, 0);
+        const finger =  world.hand.userData.fingers[world.fingersAlive-1];
+        finger.bindMode = "detached";
+        falling_fingers.push(finger);
+
+        finger.visible = true;
+        //finger.rotateX(-Math.PI/2);
+        finger.userData.fallDirection = v.set(Math.random()*2-1,Math.random()*2-1,-Math.random()*0.5).normalize().clone().multiplyScalar(20.);
+        world.fingersAlive--;
     }
-    //if (is.current_input.diffX >0) 
-    if (rotationActive !== undefined) {
-        if (selected_instrument !== undefined && selected_instrument !==4) {
-            const instrument = world.AudioSystem.instruments[selected_instrument];
-            //instrument.parameters[instrument.parameterNames[-selected_id-1]] += is.current_input.diffY * 100;
-            //instrument.parameters[instrument.parameterNames[-selected_id-1]] = Math.floor(instrument.parameters[instrument.parameterNames[-selected_id-1]]*100)/100;
-            const parameterName = instrument.parameterNames[-selected_id-1];
-            if (rotationActive.userData.cachedRotation === undefined){
-                rotationActive.userData.cachedRotation = instrument.getDefault01(parameterName);    
-            }
-            rotationActive.userData.cachedRotation+=-uiInputSystem.current_input.diffY*10.;
-            rotationActive.userData.cachedRotation = Math.min(Math.max(rotationActive.userData.cachedRotation,0),1);
-            if (rotationActive.userData.parameter === undefined)
-                rotationActive.userData.parameter = {name:parameterName,value:instrument.getParamValueFromNormRange(parameterName,rotationActive.userData.cachedRotation)};
-            else {
-                rotationActive.userData.parameter.name = parameterName;
-                rotationActive.userData.parameter.value = instrument.getParamValueFromNormRange(parameterName, rotationActive.userData.cachedRotation);
-            }
-            changeSynthParamIndividual(selected_instrument,parameterName,rotationActive.userData.parameter.value);
-            rotationActive.rotation.set(0,0,-rotationActive.userData.cachedRotation*3.14*2);
+    if(timer>=0){
+
+        world.hand.children[0].material.color.lerpColors(c.set(1,0,0),c1.copy(world.hand.children[0].material.userData.default_color),Math.sin(timer*20)*0.5+0.5);
+        timer+=world.time.UIdelta;
+        if (timer>1){
+            timer=-1;
+            world.hand.userData.removeFinger = false;
+            world.hand.children[0].material.color.copy(world.hand.children[0].material.userData.default_color);
         }
-        //rotationActive.rotateZ(is.current_input.diffY*10.);
     }
-    if (selected_instrument === undefined){
-        sheet_time +=0.015;
-        mixer_knobs.forEach((e,i)=>{
-            const val = Math.sin(sheet_time*1+i)*6.28;
-            e.rotation.set(0,0,val);
+    if (falling_fingers.length >0){
+        falling_fingers.forEach((finger,i)=>{
+            finger.rotateX(0.1);
+            finger.rotateZ(0.1);
+
+            finger.position.add(finger.userData.fallDirection.clone().multiplyScalar(world.time.UIdelta));
+            finger.scale.subScalar(world.time.UIdelta/2.);
+            if (finger.scale.x<0.01){
+                finger.visible = false;
+                world.scene.remove(finger);
+                falling_fingers.splice(i,1);
+            }
         })
     }
-    raycaster.setFromCamera(pointer,camera);
 
-    if (uniforms.time.value>0)
-        uniforms.time.value-=0.1;
-    else
-        uniforms.time.value = 0;
-    const intersects = raycaster.intersectObjects( scene.children );
-    renderer.render(scene,camera);
-    if (intersects.length !== 0) {
-        let interactionable = undefined;
-        for (let i =0;i<intersects.length;i++){
-            if (intersects[i].object.userData.skipInteraction || intersects[i].object.visible===false) continue;
-            interactionable = intersects[i];
-            break;
+    return world
+}
+function setWeight( action, weight ) {
+
+    action.enabled = true;
+    action.setEffectiveTimeScale( 1 );
+    action.setEffectiveWeight( weight );
+
+}
+export function renderUI(){
+    if (!ui_visible ) return;
+    //uniforms.time.value=0.02;
+    //uniforms.time.value%=1;
+    fly_timer+=world.time.UIdelta/2;
+    electricity.rotateY(0.02);
+
+ //   if (uniforms.time.value>0)
+        uniforms.time.value+=world.time.UIdelta/2;
+   // else
+     //   uniforms.time.value = 0;
+    setWeight(world.hand_actions[1], 0.0);
+    setWeight(world.hand_actions[2], 0.1);
+
+    setWeight(world.hand_actions[3], 0);
+    setWeight(world.hand_actions[4], 0);
+    const timer = fly_timer%2;
+    if (timer<1)
+    {
+        TriinstanceSin = -1;
+        uniforms.picked.value = -1;
+        hand_container.position.y = camera_size/2-0.65;
+        if (timer > 0.4 && remFingerFlag) {
+            world.hand.userData.removeFinger = true;
+            remFingerFlag = false;
         }
-        if (interactionable === undefined) return;
-        
-        //select tri instrument
-        if (interactionable.object.userData.beat ===-1){
-            const current_instrument  = (interactionable.object.geometry.attributes.melodyInstrumentID.array[interactionable.instanceId])%5;
-            
-            if (selected_instrument !== undefined)
-                wires[selected_instrument].visible = false;
-            wires[current_instrument].visible = true;
-            selected_instrument =current_instrument;
-            
-            const instrument = world.AudioSystem.instruments[selected_instrument];
-            //console.log(instrument);
-            //console.log(instrument.parameterNames);
-            mixer_knobs.forEach((e,i)=> {
-                const inRange = i < instrument.parameterNames.length;
-                e.visible = inRange;
-                if (inRange){
-                    e.userData.cachedRotation = instrument.getDefault01(instrument.parameterNames[i]);
-                    e.rotation.set(0,0,-e.userData.cachedRotation*3.14*2);
-                }                
-            });
-            console.log("SETCACHEDROTATION")
-            uniforms.time.value=1;
-            uniforms.picked.value=interactionable.instanceId+interactionable.object.userData.beat*40;
-            pointer.x = pointer.y = -2;
-
-            changeSynthInfo(selected_instrument);
-            return;
-        }
-        //set effects 
-        if (interactionable.object.userData.knob !==undefined){
-            selected_id  = -interactionable.object.userData.knob;
-            const c= selected_color = interactionable.object.userData.color = Math.floor(Math.random()*4);
-            //console.log("KNOBS " + c)
-            interactionable.object.material.color = new Color(colors[c*3],colors[c*3+1],colors[c*3+2]);
-            rotationActive = interactionable.object;
-            pointer.x = pointer.y = -2;
-            return;
-        }
-
-        const beat = interactionable.object.userData.beat;
-        const instance = interactionable.instanceId;
-
-        uniforms.time.value=1;
-        uniforms.picked.value = interactionable.instanceId+beat*40;
-        if (selected_instrument === undefined) {
-            world.AudioSystem.playEmptyInstrument();
-            pointer.x = pointer.y = -2;
-            return;
-        }
-
-        let pitch = 0;
-        
-        if (first_row.includes(instance))
-            pitch = first_row.length-1-first_row.indexOf(instance);
-        else if (second_row.includes(instance))
-            pitch = second_row.length-1-second_row.indexOf(instance);
-        else
-            console.log("there is no instance with given id");
-        //setting effect on empty tri
-        let id_val = interactionable.object.geometry.attributes.melodyInstrumentID.array[instance];
-/!*        if (selected_id <0 )
-        {
-            pointer.x = pointer.y = -2;
-            console.log(id_val)
-            if (id_val ===4) {
-                world.AudioSystem.playEmptyInstrument();
-                pointer.x = pointer.y = -2;
-                return;
+        if (timer < 0.1 && !remFingerFlag) {
+            if (enemy_flag) {
+                electricity.visible = false;
+                bomb.visible = true;
+            } else {
+                electricity.visible = true;
+                bomb.visible = false;
             }
-            console.log("setting effect on tri");
-            const note = world.AudioSystem.addEffectOnPosition(-selected_id-1,beat,instance,1.,selected_color);
-            updateUIKnobs(beat,instance,-selected_id-1);
-            world.AudioSystem.playInstrumentAt(note);
-            world.Curve.geometryNeedsUpdate = true;
-            return;
-        }*!/
-        id_val = id_val === selected_instrument ? 4 : selected_instrument;
-        interactionable.object.geometry.attributes.melodyInstrumentID.array[instance] = id_val;
-        uniforms.melodyInstrumentID.value[beat*40+instance] = id_val;
-
-        const note = world.AudioSystem.addInstrumentOnPosition(id_val,beat,instance,pitch);
-        
-        if (id_val !== 4) {
-            
-            world.AudioSystem.playInstrumentAt(note)
-        };
-        world.Curve.geometryNeedsUpdate = true;
-        for (let j = 0; j < 40; j++) {
-            //fill beat melody ids;
-          //  interactionable.object.geometry.attributes.melodyInstrumentID.array[j]= uniforms.melodyInstrumentID.value[beat*40+j];
+            enemy_flag = !enemy_flag;
+            remFingerFlag = true;
         }
-        interactionable.object.geometry.attributes.melodyInstrumentID.needsUpdate = true;
-        pointer.x = pointer.y = -2;
+
+        if (timer < 0.1 && world.fingersAlive === 0) {
+            world.hand.userData.fingers.forEach((f, i) => {
+                f.position.copy(world.hand.userData.storedFingerData[i].position);
+                f.rotation.copy(world.hand.userData.storedFingerData[i].rotation);
+                f.scale.copy(world.hand.userData.storedFingerData[i].scale);
+                f.visible = false;
+            });
+            world.hand.userData.fingers_bones.forEach((f) => {
+                f.scale.set(1, 1, 1);
+            });
+            world.hand.userData.removeFinger = false;
+            world.fingersAlive = 5;
+        }
     }
-    */
-}
-function reset_knob_count(){
-    knob_effect_meshes.forEach((e)=>e.forEach((e)=>e.count=0));
-}
-function updateUIKnobs(beat,instance){
-    console.log(world.AudioSystem.activeEffectID);
-    reset_knob_count();
-    for (let i=0;i<world.AudioSystem.activeEffectID.length;i++){
-        const beat = world.AudioSystem.activeEffectID[i].beat;
-        const id_on_beat = world.AudioSystem.activeEffectID[i].id_on_beat;
-        const color = world.AudioSystem.activeEffectID[i].color;
-        const effect = world.AudioSystem.activeEffectID[i].effect;
-        
-        //effect = [0,2];
-        const obj = knob_effect_meshes[effect][beat];
-        console.log(beat)
-            obj.geometry.attributes.instanceID.array[obj.count] = id_on_beat;
-            obj.geometry.attributes.instanceID.needsUpdate = true;
-
-            obj.geometry.attributes.melodyInstrumentID.array[obj.count] = color;
-            obj.geometry.attributes.melodyInstrumentID.needsUpdate = true;
-
-            obj.count++;
+    else{
+        if (world.fingersAlive===0) fly_timer=0;
+        hand_container.position.y = -camera_size/3.5;
+        if (timer>1.7 && TriinstanceSin === 2){
+            TriinstanceSin = 3;
+            uniforms.picked.value = TriinstanceSin;
+            default_note.instrument=TriinstanceSin;
+            world.AudioSystem.playInstrumentAt(default_note);
+        }        
+        else if (timer>1.5 && TriinstanceSin === 1){
+            TriinstanceSin = 2;
+            uniforms.picked.value = TriinstanceSin;
+            default_note.instrument=TriinstanceSin;
+            world.AudioSystem.playInstrumentAt(default_note);
         }
+        else if (timer>1.3 && TriinstanceSin === 0){
+            TriinstanceSin = 1;
+            uniforms.picked.value = TriinstanceSin;
+            default_note.instrument=TriinstanceSin;
+            world.AudioSystem.playInstrumentAt(default_note);
+        }
+        else if (timer>1.1 && TriinstanceSin === -1){
+            TriinstanceSin = 0;
+            uniforms.picked.value = TriinstanceSin;
+            default_note.instrument=TriinstanceSin;
+            world.AudioSystem.playInstrumentAt(default_note);
+        }
+    }
+
+    if (world.fingersAlive !== 0) {
+        hand_container.position.x = -camera_size * canvas_aspect / 2 + timer%1 * (camera_size * canvas_aspect - 0.23)-0.2;
+
+        world.mixer.update(world.time.UIdelta);
+    }
+    removeFingerSystem(world);
+    renderer.render(scene,camera);
 }
-function placeElement(element,beat,id)
-{
 
-    // switch(element)
-    //case (element.name === tri):
-    // world.AudioSystem.addInstrumentOnPosition(element.id,beat,instance);
-    // world.geometry.tri.updateGeometryAt(beat);
-
-    //case (element.name === knob)
-    // world.AudioSystem.addEffectOnPosition(element.id,beat,instance);
-    // world.geometry.knob.updateGeometryAt(beat);
-
-    //case(element.name === mixer)
-    // world.AudioSystem.addMixerOnPosition(element.id,beat,instance);
-    // world.geometry.mixer.updateGeometryAt(beat);
-
-}
-/*export function showSheetCanvas(flag){
+export function showHowToPlayScreen(flag){
 
     ui_visible = flag;
+    world.hand.children[0].material.color.set(world.hand.children[0].material.userData.default_color);
     if (flag) {
-        canvas.style.display = "block";
         msc.style.display = "block";
-        menu.style.display = "block";
-        sheet_tooltips.style.display = "block";
-        scale_div.style.display = "flex";
-    } 
+        canvas.style.display = "block";
+
+        world.hand.userData.fingers.forEach((f, i) => {
+            f.position.copy(world.hand.userData.storedFingerData[i].position);
+            f.rotation.copy(world.hand.userData.storedFingerData[i].rotation);
+            f.scale.copy(world.hand.userData.storedFingerData[i].scale);
+            f.visible = false;
+        });
+        world.hand.userData.fingers_bones.forEach((f) => {
+            f.scale.set(1, 1, 1);
+        });
+        world.hand.userData.removeFinger = false;
+        world.fingersAlive = 5;
+        world.howToPlay = true;
+        world.hand.position.set(0,-0.,-0.2);
+        world.hand.rotation.set(0,0 ,0);
+        fly_timer=0;
+        hand_container.add(world.hand);
+    }
     else {
         msc.style.display = "none";
         canvas.style.display = "none";
-        menu.style.display = "none";
-        sheet_tooltips.style.display = "none";
-        scale_div.style.display = "none";
-    }
-}*/
-function toFixed(x) {
-    if (Math.abs(x) < 1.0) {
-        var e = parseInt(x.toString().split('e-')[1]);
-        if (e) {
-            x *= Math.pow(10,e-1);
-            x = '0.' + (new Array(e)).join('0') + x.toString().substring(2);
-        }
-    } else {
-        var e = parseInt(x.toString().split('+')[1]);
-        if (e > 20) {
-            e -= 20;
-            x /= Math.pow(10,e);
-            x += (new Array(e+1)).join('0');
-        }
-    }
-    return x;
-}
-function changeSynthInfo(instrumentID){
-    const instrument = world.AudioSystem.instruments[instrumentID]; 
-    
-
-
-    for(let b =0;b<params_list.children.length;b++){
-        params_list.children[b].children[0].textContent ="            ";
-        params_list.children[b].children[1].textContent ="   ";
-    }
-
-    Object.keys(instrument.parameters).forEach((p,index)=>
-    {
-        let paramValue;
-        if (p === "waveform"){
-            paramValue = modulationTypes[Math.floor(instrument.parameters[p].value)];
-        }
-        else if (p==="noiseType"){
-            paramValue = noiseTypes[Math.floor(instrument.parameters[p].value)];
-        }
-        else {
-            const displayed_val = instrument.parameters[p].max > 5? instrument.parameters[p].value.toFixed(0): instrument.parameters[p].value.toFixed(2);
-            paramValue = displayed_val;
-        }
-
-        params_list.children[index].children[0].textContent =p;
-        params_list.children[index].children[1].textContent =paramValue;
-    })
-    synth_info.textContent=instrument.name;
-}
-function changeSynthParamIndividual(instrumentID,paramName,paramValue){
-    const instrument = world.AudioSystem.instruments[instrumentID]; 
-    
-    
-    Object.keys(instrument.parameters).forEach((p,index)=>
-    {
-        if (p !== paramName) return;
-        
-        if (p === "waveform"){
-            paramValue = modulationTypes[Math.floor(paramValue)];
-        }
-        else if (p==="noiseType"){
-            paramValue = noiseTypes[Math.floor(paramValue)];
-        }
-        else {
-            const displayed_val = paramValue > 5? paramValue.toFixed(0): paramValue.toPrecision(2);
-            paramValue = displayed_val;
-        }
-
-        params_list.children[index].children[0].textContent =p;
-        params_list.children[index].children[1].textContent =paramValue;
-    })
-    synth_info.textContent=instrument.name;
-}
-export function updateAllInstumentUI(){
-    for (let i=0;i<4;i++){
-        changeSynthInfo(i);
-    }
-    
-}
-export function saveMelodyToDisk(songName){
-    const data = world.AudioSystem.getMelodyData(songName);
-    data.speed = world.GlobalParameters.speed;
-    
-    let jsonData = JSON.stringify(data);
-    json_d= jsonData;
-    download(jsonData, 'my_melody.txt', 'text/plain');
-}
-function download(content, fileName, contentType) {
-    var a = document.createElement("a");
-    var file = new Blob([content], {type: contentType});
-    a.href = URL.createObjectURL(file);
-    a.download = fileName;
-    a.click();
-}
-export function parseMelodyJSON(json,edit_mode=false){
-    
-    fetch(json)
-        .then((response) => response.json())
-        .then((json) => {
-            const song_data = json
-            
-            //set melody
-            world.AudioSystem.setMelodyFromJsonData(song_data,edit_mode);
-            if (song_data.speed !== undefined) {
-                world.GlobalParameters.speed = song_data.speed;
-                world.camera.userData.speed = song_data.speed;
-                document.getElementById('speedSelect').value = song_data.speed;
-            }
-            
-            song_data.melody.forEach((e)=>{
-                //world.AudioSystem.availableMelody[e.instrument].notes.push({beat:e.beat,id_on_beat:e.id_on_beat,pitch:e.pitch});
-                
-                //uniforms.melodyInstrumentID.value[e.beat*40+e.id_on_beat] = e.instrument;
-                tri_instance_meshes[e.beat].geometry.attributes.melodyInstrumentID.array[e.id_on_beat] = e.instrument;
-                //world.AudioSystem.addInstrumentOnPosition(e.instrument,e.beat,e.id_on_beat,e.pitch);
-            })
-            tri_instance_meshes.forEach((e)=> {
-                e.geometry.attributes.melodyInstrumentID.needsUpdate = true
-            });
-            world.Curve.geometryNeedsUpdate = true;
-            
-            if (song_data.scale !== undefined)
-                (document.getElementById('scaleSelect').value = song_data.scale);
-            console.log(song_data.tonicOctave)
-            if (song_data.tonicOctave !== undefined) {
-                (document.getElementById('tonicSelect').value = song_data.tonicOctave.tonic);
-                (document.getElementById('octaveSelect').value = song_data.tonicOctave.octave)
-            }
-            if (selected_instrument !== undefined && selected_instrument !==4)
-                changeSynthInfo(selected_instrument);
+        world.scene.add(world.hand);
+        world.hand.userData.fingers.forEach((f, i) => {
+            f.position.copy(world.hand.userData.storedFingerData[i].position);
+            f.rotation.copy(world.hand.userData.storedFingerData[i].rotation);
+            f.scale.copy(world.hand.userData.storedFingerData[i].scale);
+            f.visible = false;
         });
-    //set instrument parameters
-}
-export function clearMusicSheet(json,edit_mode=false){
-
-    document.getElementById('scaleSelect').value = world.AudioSystem.getDefaultScale();
-    const {tonic, octave} = world.AudioSystem.getDefaultTonicAndOctave(); 
-    document.getElementById('tonicSelect').value = tonic;
-    document.getElementById('octaveSelect').value = octave;
-    document.getElementById('speedSelect').value = 2.5;
-    tri_instance_meshes.forEach((mesh,index)=>{
-        //world.AudioSystem.availableMelody[e.instrument].notes.push({beat:e.beat,id_on_beat:e.id_on_beat,pitch:e.pitch});
-        for (let id_on_beat = 0; id_on_beat < 40; id_on_beat++) {
-            mesh.geometry.attributes.melodyInstrumentID.array[id_on_beat] = uniforms.melodyInstrumentID.value[index*40+id_on_beat];
-        }
-        mesh.geometry.attributes.melodyInstrumentID.needsUpdate = true;
-    });
-}
-
-export function showSheetSongList(flag) {
-    let x = document.getElementById("sheet_songList");
-
-    if (flag) {
-        msc.removeEventListener('pointerdown', onPointerDown,false);
-        x.style.display = "block";
-        document.querySelectorAll('span') // get all elements you want
-            .forEach( item => { // iterate over them and get every as "item"
-                if(item.offsetWidth > 250){ // check if it's widthter than parent
-                    console.log(item.offsetWidth)
-                    console.log(item.textContent)
-                    console.log(item.getAnimations()[0]);
-                    item.animate({
-                            transform: ['translateX(0px)', 'translateX(-'+(item.offsetWidth-250)+'px)']
-                        },
-                        {
-                            duration: 2000,
-                            iterations: Infinity,
-                            direction: 'alternate',
-                        })
-
-                    // item.classList.add('scrolled') // if is, add him class to scroll
-                }
-            })
-    } else {
-        msc.addEventListener('pointerdown', onPointerDown,false);
-        x.style.display = "none";
+        world.hand.userData.fingers_bones.forEach((f) => {
+            f.scale.set(1, 1, 1);
+        });
+        world.hand.userData.removeFinger = false;
+        world.howToPlay=false;
+        world.fingersAlive = 5;
     }
 }

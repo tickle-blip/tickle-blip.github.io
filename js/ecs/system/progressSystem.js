@@ -13,7 +13,7 @@ export const progressSystem = (world) => {
 
             });
         }
-        console.log("progressSystem",world.AudioSystem.getProgress()*100);
+//        console.log("progressSystem",world.AudioSystem.getProgress()*100);
     }
     return world
 }

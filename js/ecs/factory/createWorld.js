@@ -26,7 +26,6 @@ export const createWorld = (camera) => {
     world.camera.updateProjectionMatrix()
     world.renderer.setSize( window.innerWidth, window.innerHeight )
  //   world.renderer.setPixelRatio( window.devicePixelRatio )
-    console.log(world.renderer.getRenderTarget())
 
   })
 

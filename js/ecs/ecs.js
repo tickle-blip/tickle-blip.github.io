@@ -62,7 +62,7 @@ class ECS_Container
         this.world.paused = true;
         this.world.progressMustUpdate=false;
         this.world.win = false;
-        
+        this.world.howToPlay = false;
         //bar size, geometry loops count.
         this.world.GlobalParameters = {speed:2.5, curveCount:3,curveLength:8,barSize:8,loops:1,safeTime:2.,rotationSpeed: {value:0.}, triAmplitude: {value:1.}};
         
@@ -107,11 +107,11 @@ class ECS_Container
         addComponent(this.world, CameraTag, eid)
         this.world.objects.set(this.world.camera.eid, this.world.camera);
            this.world.camera.userData.speed = this.world.GlobalParameters.speed;
-        this.world.camera.userData.dirV = new Vector3(0,0,-1);
+        this.world.camera.userData.tbnVelocity = new Vector3(0,0,-1);
         this.world.camera.userData.offset = new Vector3(0,0,0);
         const m = new Mesh(new SphereGeometry(0.0001,32,32), new MeshBasicMaterial({color:0x00ff00}));
         
-        this.world.scene.add(new AxesHelper( 5 ));
+        //this.world.scene.add(new AxesHelper( 5 ));
         this.world.scene.add(new AmbientLight(0xffffff,0.05));
         this.world.scene.add(m);
         let sl = new SpotLight(0xffffff, 3);
@@ -289,14 +289,18 @@ class ECS_Container
             a.tracks.splice(delete_indices[k-1],1);
         const fps = a.tracks[0].times.length/a.duration;
 
-        AnimationUtils.makeClipAdditive( a );
-        const i = AnimationUtils.subclip ( a, "IDLE", 0, 1, fps );
-        const l = AnimationUtils.subclip ( a, "LEFT", 2, 3, fps );
+        //AnimationUtils.makeClipAdditive( a );
+        let i = AnimationUtils.subclip ( a, "IDLE", 0, 1, fps );
+        let l = AnimationUtils.subclip ( a, "LEFT", 2, 3, fps );
         const r = AnimationUtils.subclip ( a, "RIGHT", 4, 5, fps );
         const d = AnimationUtils.subclip ( a, "UP", 6, 7, fps );
         const u = AnimationUtils.subclip ( a, "DOWN", 8, 9, fps );
         const m = AnimationUtils.subclip ( a, "MOVING", 10, 34, fps );
-        
+        AnimationUtils.makeClipAdditive( i,0,m,fps );
+        AnimationUtils.makeClipAdditive( l,0,m,fps );
+        AnimationUtils.makeClipAdditive( r,0,m,fps );
+        AnimationUtils.makeClipAdditive( d,0,m,fps );
+        AnimationUtils.makeClipAdditive( u,0,m,fps );
         hand.position.set(0,-0.,-0.2);
         hand.rotation.set(0,0 ,0);
         hand.scale.set(0.01,0.01,0.01);
@@ -364,7 +368,7 @@ class ECS_Container
         });
         this.world.hand.userData.removeFinger = false;
         this.world.fingersAlive=5;
-
+        
         this.world.AudioSystem.resetMelody();
         this.world.Curve.resetCurves(this.world);
         this.world.progressMustUpdate=true;

@@ -10,6 +10,7 @@ export const movementQuery = defineQuery([TransformComponent,DummyTag])
 export const movementSystem = (world) => {
   const { time: { delta, elapsed } } = world
   const ents = movementQuery(world)
+  if (world.howToPlay === true) return world;
   for (let i = 0; i < ents.length; i++) {
     const e = ents[i]
     const obj3d = world.objects.get(e)

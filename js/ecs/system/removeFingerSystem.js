@@ -8,7 +8,7 @@ const c1 = new Color;
 let timer=-1;
 //damageSystem
 export const removeFingerSystem = (world) => {
-    if (timer<0 && world.hand.userData.removeFinger === true && world.fingersAlive > 0) {
+    if (world.paused === false && timer<0 && world.hand.userData.removeFinger === true && world.fingersAlive > 0) {
         world.hand.userData.removeFinger= false;
         
         world.AudioSystem.playEmptyInstrument();
@@ -21,8 +21,8 @@ export const removeFingerSystem = (world) => {
         finger.bindMode = "detached";
         falling_fingers.push(finger);
 
-        console.log(finger.rotation);
-        console.log(finger.position);
+        //console.log(finger.rotation);
+        //console.log(finger.position);
         finger.visible = true;
         //finger.rotateX(-Math.PI/2);
         finger.userData.fallDirection = v.set(Math.random()*2-1,Math.random()*2-1,-Math.random()*0.5).normalize().clone().multiplyScalar(20.);
@@ -30,12 +30,12 @@ export const removeFingerSystem = (world) => {
         }
     if(timer>=0){
         
-        world.hand.children[0].material.color.lerpColors(c.set(1,0,0),c1.set(1,1,1),Math.sin(timer*20)*0.5+0.5);
+        world.hand.children[0].material.color.lerpColors(c.set(1,0,0),c1.copy(world.hand.children[0].material.userData.default_color),Math.sin(timer*20)*0.5+0.5);
         timer+=world.time.delta;        
         if (timer>world.GlobalParameters.safeTime){
             timer=-1;
             world.hand.userData.removeFinger = false;
-            world.hand.children[0].material.color.set(1,1,1);
+            world.hand.children[0].material.color.copy(world.hand.children[0].material.userData.default_color);
         }
     }
     if (falling_fingers.length >0){

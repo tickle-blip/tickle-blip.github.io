@@ -12,6 +12,7 @@ import {
 } from './3dmusicSheet.js';
 
 import {
+    showHowToPlayScreen as showHowToPlayScreen,
     initUI as initHowToPlayUI,
     renderUI as renderHowToPlayUI,
 } from './howToPlayScreen.js';
@@ -24,7 +25,7 @@ import {
     RepeatWrapping,
     Scene,
     SRGBColorSpace,
-    TextureLoader, Vector2
+    TextureLoader, Vector2, Color
 } from "three";
 //create scene
 const secret_code = "sleepwell";
@@ -40,7 +41,7 @@ await initModels().catch((err)=> console.error(err));
 
 initECS();
 initUI(ui_pre_scene,ecs.world);
-//initHowToPlayUI(how_to_play_pre_scene,ecs.world);
+initHowToPlayUI(how_to_play_pre_scene,ecs.world);
 
 ecs.update();
 //const acl = new Accelerometer({ frequency: 60 });
@@ -55,17 +56,7 @@ acl.addEventListener("reading", () => {
 //acl.start();
 
 
-window.addEventListener("deviceorientation", handleOrientation, true);
-function handleMotionEvent(event) {
-
-    var x = event.accelerationIncludingGravity.x;
-    var y = event.accelerationIncludingGravity.y;
-    var z = event.accelerationIncludingGravity.z;
-console.log("motionevent",x,y,z);
-    // Do something awesome.
-}
-
-window.addEventListener("devicemotion", handleMotionEvent, true);
+/*window.addEventListener("deviceorientation", handleOrientation, true);
 function handleOrientation(event) {
     var absolute = event.absolute;
     var alpha    = event.alpha;
@@ -76,7 +67,7 @@ function handleOrientation(event) {
     console.log(alpha);
     console.log(beta);
     console.log(gamma);
-}
+}*/
 document.styleSheets[0].insertRule('canvas { outline:none; border:none; }', 0);
 async function initModels(){
     game_pre_scene = new Scene();
@@ -126,7 +117,6 @@ async function initModels(){
     
     const ui_to_sheet = await loader.loadAsync('musicSheetTris1.gltf');
     const sheet_positions = await loader.loadAsync('sheet_positions.gltf');
-    console.log(ui_to_sheet);
     const audio_visual_quad = await loader.loadAsync('beam.gltf');
     const visual_quad = audio_visual_quad.scene.children[0];
     visual_quad.name = "VISUAL_QUAD";
@@ -159,12 +149,16 @@ async function initModels(){
     }
     
     hand.scene.children[0].animations = hand.animations;
+    hand.scene.children[0].frustumCulled=false;
     hand.scene.children[0].children[0].material = new MeshPhongMaterial({color: 0xffffff,emissive: 0x333333});
+
+    hand.scene.children[0].children[0].material.userData.default_color = new Color(0.5,0.5,0.5);
+    hand.scene.children[0].children[0].material.color.copy(hand.scene.children[0].children[0].material.userData.default_color);
     hand.scene.children[0].children[0].material.roughness = 0.0;
     const h = hand.scene.children[0];
     game_pre_scene.add(h);
     
-    how_to_play_pre_scene.add(h.clone());
+    //how_to_play_pre_scene.add(h.clone());
     const e = await loader.loadAsync('electricity.gltf');
     const electricity = e.scene.children[0];
     electricity.name = "ELECTRICITY";
@@ -172,7 +166,7 @@ async function initModels(){
     electricity.roughness = 0.;
     electricity.material.side = DoubleSide;
     electricity.material.transparent= true;
-    electricity.material.opacity = 0.5;
+    electricity.material.opacity = 1;
     electricity.material.blending= AdditiveBlending;
     electricity.material.depthWrite = false;
 
@@ -217,6 +211,14 @@ function showMainMenu(flag) {
         x.style.display = "none";
     }
 }
+function showAboutScreen(flag){
+    let x = document.getElementById("aboutscreen");
+    if (flag) {
+        x.style.display = "block";
+    } else {
+        x.style.display = "none";
+    }
+}
 function showCodeMenu(flag) {
     let x = document.getElementById("codeEntering");
     if (flag) {
@@ -241,9 +243,6 @@ function showSongList(flag) {
         document.querySelectorAll('span') // get all elements you want
             .forEach( item => { // iterate over them and get every as "item"
                 if(item.offsetWidth > 250){ // check if it's widthter than parent
-                    console.log(item.offsetWidth)
-                    console.log(item.textContent)
-                    console.log(item.getAnimations()[0]);
                     item.animate({
                             transform: ['translateX(0px)', 'translateX(-'+(item.offsetWidth-250)+'px)']
                         },
@@ -302,17 +301,23 @@ document.getElementById("submitButton").addEventListener("click", function() {
     ecs.world.Curve.placeInteractive(ecs.world,2);
     startGame();
 });*/
-function songChoose(event){
-    console.log(event.target);
-    console.log(event.target.dataset.url);
+function openHowToPlayScreen(event){
     showSongList(false);
+    parseMelodyJSON(event.target.dataset.url);
+    showHowToPlayScreen(true);
+}
+document.getElementById("howToPlayContainer").addEventListener("click", function() {
+   songChoose();
+});
+function songChoose(event){
+    showHowToPlayScreen(false);
     showGameUI(true);
     //ecs.world.Curve.resetCurves(ecs.world);
     //ecs.world.camera.position.set(0,0,0);
-    parseMelodyJSON(event.target.dataset.url);
     ecs.world.Curve.placeInteractive(ecs.world,1);
     ecs.world.Curve.placeInteractive(ecs.world,2);
     startGame();
+    ecs.world.Input.calibrateXY();
 }
 function sheet_songChoose(event){
     showSheetSongList(false);
@@ -325,7 +330,7 @@ function sheet_songChoose(event){
 }
 document.querySelectorAll('div.melody') // get all elements you want
     .forEach( item => {
-        item.addEventListener('click', songChoose);
+        item.addEventListener('click', openHowToPlayScreen);
          });
 
 document.querySelectorAll('div.sheet_melody') // get all elements you want
@@ -376,6 +381,10 @@ document.getElementById("pausebtn").addEventListener("click", function() {
     //ecs.world.camera.position.set(0,0,0);
 });
 
+document.getElementById("whatisthis").addEventListener("click", function() {
+    showMainMenu(false);
+    showAboutScreen(true);
+});
 document.getElementById("playFromSheetBtn").addEventListener("click", function() {
     showSheetCanvas(false);
     ecs.world.editMode=true;
@@ -394,6 +403,10 @@ document.getElementById("closeSheetBtn").addEventListener("click", function() {
 });
 document.getElementById("rtmm").addEventListener("click", function() {
     showSongList(false);
+    showMainMenu(true);
+    //startGame();
+});document.getElementById("rtmmm").addEventListener("click", function() {
+    showAboutScreen(false);
     showMainMenu(true);
     //startGame();
 });
@@ -477,7 +490,7 @@ animate();
 function animate(){
     requestAnimationFrame(animate );
     renderUI();
-    //renderHowToPlayUI();
+    renderHowToPlayUI();
     //input update
     //curve update
     ecs.update();

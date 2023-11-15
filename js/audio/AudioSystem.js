@@ -166,14 +166,16 @@ const Synth1 = function(){
         
         const pitch = currentScaleFr * Math.pow(2, Math.floor(pitch_index/activeScale.length)+ activeScale[mod(pitch_index,activeScale.length)]/12);
 
+/*
         console.log("synth.voices.length: "+ synth._voices.length);
         console.log("synth.activeVoices.length: " + synth._activeVoices.length)
         console.log("synth.availableVoices.length: "+ synth._availableVoices.length);
         console.log("synth.maxPolyphony: " +synth.maxPolyphony);
+*/
 
         if (synth.maxPolyphony>0 && synth._activeVoices.length===synth.maxPolyphony && synth._availableVoices.length===0){
             //synth._activeVoices[0].voice.oscillator.stop();
-            console.log(synth._activeVoices[0])
+            //console.log(synth._activeVoices[0])
             synth._activeVoices[0].released=true;
             synth._activeVoices[0].voice.triggerAttackRelease(pitch,this.parameters.attack.value);
         }
@@ -261,7 +263,7 @@ const Synth2 = function(){
 
         if (synth.maxPolyphony>0 && synth._activeVoices.length===synth.maxPolyphony && synth._availableVoices.length===0){
             //synth._activeVoices[0].voice.oscillator.stop();
-            console.log(synth._activeVoices[0])
+            //console.log(synth._activeVoices[0])
             synth._activeVoices[0].released=true;
             synth._activeVoices[0].voice.triggerAttackRelease(pitch,this.parameters.sustainTime.value + this.parameters.attack.value);
         }
@@ -409,7 +411,7 @@ const Membrane = function(){
 
         if (synth.maxPolyphony>0 && synth._activeVoices.length===synth.maxPolyphony && synth._availableVoices.length===0){
             //synth._activeVoices[0].voice.oscillator.stop();
-            console.log(synth._activeVoices[0])
+            //console.log(synth._activeVoices[0])
             synth._activeVoices[0].released=true;
             synth._activeVoices[0].voice.triggerAttackRelease(pitch,this.parameters.pitchDecay.value + this.parameters.attack.value);
         }
@@ -479,7 +481,7 @@ export class AudioSystem
             if (scales[p] === activeScale)
                 data.scale = p;
         });
-        console.log(data.scale);
+        //console.log(data.scale);
         for (let i=0;i<4;i++){
             const instrument = this.instruments[i];
             data[`Synth${i+1}`].parameters = {};
@@ -527,14 +529,14 @@ export class AudioSystem
             activeScale = scales[song_data.scale];
         if (song_data.tonicOctave !== undefined)
             this.setTonicAndOctave(song_data.tonicOctave.tonic, song_data.tonicOctave.octave);
-        console.log(activeScale)
+        //console.log(activeScale)
         for (let i=0;i<4;i++){
             const instrument = this.instruments[i];
             Object.keys(instrument.parameters).forEach((p)=>
             {
                 if (song_data[`Synth${i+1}`].parameters[p] !== undefined) {
-                    console.log(p)
-                    console.log(song_data[`Synth${i+1}`].parameters[p])
+                    //console.log(p)
+                    //console.log(song_data[`Synth${i+1}`].parameters[p])
                     instrument.modifyParameter(p, song_data[`Synth${i + 1}`].parameters[p]);
                 }
                     //instrument.parameters[p].value = song_data[`Synth${i+1}`].parameters[p];
@@ -558,9 +560,9 @@ export class AudioSystem
             const instrument = this.instruments[i];
             Object.keys(instrument.parameters).forEach((p)=>
             {   
-                console.log(instrument.parameterNames[p]);
+                /*console.log(instrument.parameterNames[p]);
                 console.log(instrument.parameters[p].default)
-                console.log(instrument.parameters[p].value)
+                console.log(instrument.parameters[p].value)*/
                 if (instrument.parameters[p].default !== undefined)
                     instrument.parameters[p].value = instrument.parameters[p].default;
             })
@@ -570,7 +572,7 @@ export class AudioSystem
         for (let i = 0; i<this.#bar_size;i++){
             this.melody[i].instances.length=0;
         }
-        console.log(this.melody)
+        //console.log(this.melody)
         this.melodyInstrumentID.fill(4);
 
         for (let i = 0; i < this.melodyInstrumentID.length; i++) {
@@ -578,7 +580,7 @@ export class AudioSystem
             this.melodyInstrumentID.eventOnModify(i, 4);
         }
         this.activeEffectID.length=0;
-        console.log(this.activeEffectID)
+        //console.log(this.activeEffectID)
         this.availableMelody=[{notes:[]},{notes:[]},{notes:[]},{notes:[]}];
         this.#totalInstrumentsCount=1;
         this.#currentInstrumentsCount=0;
@@ -617,7 +619,7 @@ export class AudioSystem
     addInstrumentOnRandomAvailablePosition(instrument_id){
         if (this.availableMelody[instrument_id].notes.length === 0)
         {
-            console.log("no available ids");
+            //console.log("no available ids");
             return;
         }
         const n = this.availableMelody[instrument_id].notes.pop();
@@ -635,7 +637,7 @@ export class AudioSystem
     }
     addEffectOnRandomAvailablePosition(effect_id,variation){
         if (this.availableEffectIds.length === 0) {
-            console.log("no available ids");
+            //console.log("no available ids");
             return;
         }
         const note = this.availableEffectIds.pop();

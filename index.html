@@ -10,7 +10,7 @@
 <script type="module" src="./js/scene.js"></script>
 
 <link href="style.css" rel="stylesheet" type="text/css" />
-<div id="startScreen" class="startScreen" style="display: block" >
+<div id="startScreen" class="startScreen" style="display: block; pointer-events:none" >
   <div class="buttons">
     <h1>THEREMIN AUTO</h1>
     <div id="chooseSong" class="btn btn-one">
@@ -19,15 +19,12 @@
     <div id="makeSong" class="btn btn-one">
       <span>Create Melody</span>
     </div>
+    <div id="whatisthis" class="btn btn-one">
+      <span>What Is This</span>
+    </div>
   </div>
 
   <div class="buttonsBottom">
-  <div id="howtoplay" class="btn btn-one">
-    <span>How To Play</span>
-  </div>
-  <div id="whatisthis" class="btn btn-one">
-    <span>What Is This</span>
-  </div>
     </div>
 </div>
 <div id="pauseScreen" class="startScreen" style="display: none">
@@ -59,7 +56,11 @@
   </div>
 </div>
 <div id="songList" class="songList" style="">
-  <div class="buttons" style="top:45%; transform: translate(0%,-50%);" >
+  <div class="buttons" style=" 
+    top: 45%;
+    transform: translate(-50%,-50%);
+    width: fit-content;
+    left: 50%;" >
     <h1>Choose Melody</h1>
     <div id="song1" class="melody btn btn-one" data-url="./songs/scatch.txt" > 
       <span>Scatch</span>
@@ -96,11 +97,12 @@
   </div>
 </div>
 
-<div id="codeEntering" class="codeScreen" style="display: none">
+<div id="codeEntering" class="codeScreen" style="display: none;
+pointer-events: none">
   <div id="codeInput" class="codeInput">
   <p>To Unlock Melody Creation</p>
     <p>Complete Any Melody And Enter Displayed Code</p>
-      <input id="input_text"></input>
+      <input id="input_text" style="pointer-events: auto"></input>
       <div id="submitButton" class="btn btn-one">Submit</div>
       <div id="rtm" class="btn btn-one">
         <span>Return To Menu</span>
@@ -248,21 +250,86 @@
   </div>
 </div>
 
-<div id="howToPlayContainer" class="musicSheetContainer" style="display: none;">
+<div id="howToPlayContainer" class="musicSheetContainer" style="display: none; backdrop-filter: blur(5px);
 
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;">
   <canvas id="howToPlayScreen" class="musicSheet">
-   <!-- <script type="module" src="./js/howToPlayScreen.js"></script>-->
   </canvas>
+  <div style="position: fixed;
+    top: 0%;
+    width: 100%;
+    height: 100%;
+    color: #ffffff;
+    font-family:'digital-clock-font'; 
+    text-align: center;   
+    font-size: 1.5em;
+">
+    <p>
+      Avoid Bombs and Electric fields.
+    </p>
+    <p>
+      Each collision cuts one of your five fingers!
+    </p>
+  </div>
+  <div style="position: fixed;
+    top: 50%;
+    width: 100%;
+    height:50%;
+    overflow: clip;
+    color: #ffffff;
+    font-family:'digital-clock-font';
+    text-align: center;  
+    font-size: 1.5em;  
+">
+    <p>
+      Melody consists of triangle instruments.</p>
 
+    <p> Collect Them all and enjoy completed melody.
+    </p>
+  </div>
+  <div style="position: fixed;
+    top: 90%;
+    width: 100%;
+    height:50%;
+    overflow: clip;
+    color: #ffffff;
+    font-family:'digital-clock-font';
+    text-align: center;  
+    font-size: 1.5em;  
+">
+    <p>
+      Tap or Press Any Key To Start</p>
+
+  </div>
 </div>
 
-<div id="aboutscreen" class="startScreen" style="display: none; text-align: center; backdrop-filter: blur(10px);" >
-  <div style="padding: 10px 20px; font-size: 1.25em" class="buttons">
+<div id="aboutscreen" class="startScreen" style="display: none; text-align: center; backdrop-filter: blur(2px); pointer-events: none;" >
+  <div style="padding: 10px 20px; font-size: 1.25em;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+     pointer-events: none;
+" class="buttons">
     <p>
-      Complete a game to unlock melody creation and earn promocode;<br>
       Game inspired by <a target="_blank" href="https://basic.audio">basic.audio</a> synthesizer designs.<br>
-      Do noise.
-    </p>
+
+      Complete a game to unlock melody creation and earn promocode.<br>
+      
+      If you were lucky to create your own melody, please save it and send  <a target="_blank" href="https://t.me/lgucb">here</a>.<br> <br>
+      Do noise.</p>
+  </div>
+  <div id="rtmmm" class="btn btn-one" style="    transform: translate(-100%, 0);
+    left: 100%;">
+    <span>Return To Menu</span>
   </div>
 
 </div>

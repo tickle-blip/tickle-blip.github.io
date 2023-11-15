@@ -159,7 +159,8 @@ export class InputSystem extends EventDispatcher {
         let oldX=window.innerWidth/2, oldY=window.innerHeight/2;
         let startX=window.innerWidth/2, startY=window.innerHeight/2;
         let difX=0, difY=0;
-
+        let accX=0,accY=0;
+        let defAccX,defAccY;
         this.update = function(delta){
             this.checkGameKeys();
             this.current_input.diffX = difX/ window.innerWidth;
@@ -169,10 +170,19 @@ export class InputSystem extends EventDispatcher {
             this.current_input.pointerX = (oldX/ window.innerWidth) *2 -1 ;
             this.current_input.pointerY = -(oldY/ window.innerWidth) * 2 + 1;
             this.current_input.mouseMove = mouseMove;
-            
+            if (defAccX === undefined)
+                this.calibrateXY();
+            this.current_input.accX = accX;
+            //console.log(this.current_input.accX)
+            this.current_input.accY = accY;
+            //console.log(this.current_input.accY)
             difX = difY= 0;
+            mouseMove=false;
         }
-
+        this.calibrateXY= function(){
+            defAccX = accX;
+            defAccY = accY;
+        }   
         const _keydown = this.keydown.bind( this );
 
         const _keyup = this.keyup.bind( this );
@@ -322,6 +332,7 @@ export class InputSystem extends EventDispatcher {
             difY = diffY = event.pageY - oldY;
             oldX = event.pageX;
             oldY = event.pageY;
+            console.log(difX,difY)
             }
         }
         
@@ -497,7 +508,18 @@ export class InputSystem extends EventDispatcher {
             mouseMove = false;
             difX =0;
             difY=0;
-        }
+        }     
+        function handleMotionEvent(event) {
+
+        var x = event.rotationRate.beta*event.interval/1000/10;
+        var y = event.rotationRate.alpha*event.interval/1000/10;
+        var z = event.rotationRate.z;
+        accX = x;
+        accY = y;
+        // Do something awesome.
+    }
+
+        window.addEventListener("devicemotion", handleMotionEvent, true);
 
         window.addEventListener( 'keydown', _keydown ,false );
         window.addEventListener( 'keyup', _keyup,false );
