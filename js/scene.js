@@ -70,6 +70,8 @@ function handleOrientation(event) {
 }*/
 document.styleSheets[0].insertRule('canvas { outline:none; border:none; }', 0);
 async function initModels(){
+    let loading_progress = document.getElementById("loadingprogressbar_position");
+    loading_progress.style.width = Math.floor(0)+"%";
     game_pre_scene = new Scene();
     ui_pre_scene = new Scene();
     how_to_play_pre_scene = new Scene();
@@ -79,12 +81,13 @@ async function initModels(){
     const img_loader = new TextureLoader().setPath('/textures/');
 
     const rgbw = await img_loader.loadAsync("rgbw.png");
+    loading_progress.style.width = "5%";
     rgbw.flipY = false;
     rgbw.colorSpace = SRGBColorSpace;
 
     //add each peace to new combined scene -> process later
     const circle = await loader.loadAsync('TO_self.gltf');
-    
+    loading_progress.style.width = "10%";
     const TO_Body = circle.scene.children[0];
     TO_Body.name = "TO_SELF";
     TO_Body.material = new MeshPhongMaterial({color: 0xffffff});
@@ -96,12 +99,15 @@ async function initModels(){
     ui_pre_scene.add(TO_Body.clone());
     how_to_play_pre_scene.add(TO_Body.clone());
     const knob_mats = await loader.loadAsync('knob_mat.gltf');
+    loading_progress.style.width = "20%";
     game_pre_scene.add(knob_mats.scene.children[0]);
     
     const w = await img_loader.loadAsync("w_k.png");
+    loading_progress.style.width = "25%";
     w.flipY = false;
     w.colorSpace = SRGBColorSpace;
     const knobs = await loader.loadAsync('knobs_self.gltf');
+    loading_progress.style.width = "35%";
     knobs.scene.traverse((child)=>{
         if(child.isMesh){
             //const m = child.material.map;
@@ -116,8 +122,11 @@ async function initModels(){
 
     
     const ui_to_sheet = await loader.loadAsync('musicSheetTris1.gltf');
+    loading_progress.style.width = "40%";
     const sheet_positions = await loader.loadAsync('sheet_positions.gltf');
+    loading_progress.style.width = "50%";
     const audio_visual_quad = await loader.loadAsync('beam.gltf');
+    loading_progress.style.width = "55%";
     const visual_quad = audio_visual_quad.scene.children[0];
     visual_quad.name = "VISUAL_QUAD";
     visual_quad.material = new MeshPhongMaterial({color: 0xffffff});
@@ -129,7 +138,7 @@ async function initModels(){
     visual_quad.material.depthWrite = false;
 
     const laser_tex = await img_loader.loadAsync("fractal1.png");
-    
+    loading_progress.style.width = "60%";
     laser_tex.wrapS = RepeatWrapping;
     laser_tex.wrapT = RepeatWrapping;
     laser_tex.repeat = new Vector2(1,1);
@@ -143,6 +152,7 @@ async function initModels(){
     ui_pre_scene.add(sheet_positions.scene);
 
     const hand = await loader.loadAsync('hand_w_fingers.gltf');
+    loading_progress.style.width = "75%";
     hand.scene.children[0].name = "HAND";
     while(hand.scene.children.length > 1){
         hand.scene.children[0].attach(hand.scene.children[1]);
@@ -160,6 +170,7 @@ async function initModels(){
     
     //how_to_play_pre_scene.add(h.clone());
     const e = await loader.loadAsync('electricity.gltf');
+    loading_progress.style.width = "80%";
     const electricity = e.scene.children[0];
     electricity.name = "ELECTRICITY";
     electricity.material = new MeshPhongMaterial({color: 0xffffff});
@@ -171,7 +182,7 @@ async function initModels(){
     electricity.material.depthWrite = false;
 
     const electricity_tex = await img_loader.loadAsync("electric.png");
-
+    loading_progress.style.width = "90%";
     electricity_tex.wrapS = RepeatWrapping;
     electricity_tex.wrapT = RepeatWrapping;
     electricity_tex.repeat = new Vector2(1,1);
@@ -179,6 +190,7 @@ async function initModels(){
     game_pre_scene.add(electricity);
     how_to_play_pre_scene.add(electricity.clone());
 
+    loading_progress.style.width = "100%";
     const b = await loader.loadAsync('bomb.gltf');
     const bomb = b.scene.children[0];
     bomb.name = "BOMB";
@@ -194,6 +206,7 @@ async function initModels(){
 
     game_pre_scene.add(bomb);
     how_to_play_pre_scene.add(bomb.clone());
+    document.getElementById("loadingScreen").style.display = "none";
 }
 
 function initECS(){

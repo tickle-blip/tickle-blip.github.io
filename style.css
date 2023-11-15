@@ -33,6 +33,18 @@
 
     pointer-events:none;
 }
+.loadingScreen {
+    display: block;
+    font-size: 100%;
+    color: white;
+
+    z-index: 1001;
+    font-family:'digital-clock-font';
+    position: fixed;
+    height:100%;
+    width:100%;
+}
+
 .playScreen {
     display: none;
     align-items: stretch;
@@ -76,6 +88,42 @@
     height:inherit;
 }
 #progressbar_text{
+    position: relative;
+    width:100%;
+    height:25px;
+    top:-100%;
+    text-align: center;
+}
+#loadingprogressbar{
+    width:50%;
+    height:25px;
+    margin: 0.5em;
+    //line-height: 50px;
+    align-self: center;
+
+    position: relative;
+
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    opacity: 0.5;
+    background-color: rgba(255,255,255,0.1);
+}
+.loadingprogressbar_position{
+    position: relative;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-top-style: solid;
+    border-bottom-style: solid;
+    border-top-color: rgba(255,255,255,0.9);
+    border-bottom-color: rgba(255,255,255,0.9);
+
+    background-color: rgba(255,255,255,0.3);
+    width:0%;
+    height:inherit;
+}
+#loadingprogressbar_text{
+    color: #fefefe;
     position: relative;
     width:100%;
     height:25px;
